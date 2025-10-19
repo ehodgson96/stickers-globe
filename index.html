@@ -245,9 +245,11 @@
                 
                 vec3 color = mix(nightColor, dayColor, mixFactor);
                 
-                gl_FragColor = vec4(color, 1.0);
-            }
-        `;
+                float spec = pow(max(dot(vNormal, uSunDirection), 0.0), 16.0) * 0.4;
+                color += vec3(spec);
+
+                gl_FragColor = vec4(color, 1.0);            }
+                `;
 
         // Three.js setup
         const container = document.getElementById('globe-container');
@@ -263,8 +265,8 @@
 
         // Load textures
         const textureLoader = new THREE.TextureLoader();
-        const dayTexture = textureLoader.load('./data/1_earth_16k.jpg');
-        const nightTexture = textureLoader.load('./data/5_night_16k.jpg');
+        const dayTexture = textureLoader.load('./data/1_earth_8k.jpg');
+        const nightTexture = textureLoader.load('./data/5_night_8k.jpg');
         
         // Set color space for proper color rendering
         dayTexture.colorSpace = THREE.SRGBColorSpace;
@@ -401,12 +403,21 @@
             isDragging = false;
         });
 
-        // Zoom
-        container.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            camera.position.z += e.deltaY * 0.001;
-            camera.position.z = Math.max(1.5, Math.min(5, camera.position.z));
-        });
+container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    
+    // Get current direction from camera to globe center
+    const direction = new THREE.Vector3(0, 0, 0).sub(camera.position).normalize();
+    
+    // Adjust distance while maintaining direction
+    const currentDistance = camera.position.length();
+    const newDistance = currentDistance + e.deltaY * 0.001;
+    const clampedDistance = Math.max(1.5, Math.min(5, newDistance));
+    
+    // Set camera position maintaining the direction but with new distance
+    camera.position.copy(direction.multiplyScalar(-clampedDistance));
+    camera.lookAt(0, 0, 0);
+});
 
         // Sidebar
         const stickerList = document.getElementById('sticker-list');
@@ -426,17 +437,55 @@
             stickerList.appendChild(item);
         });
 
-        function selectSticker(index) {
-            document.querySelectorAll('.sticker-item').forEach((item, i) => {
-                item.classList.toggle('active', i === index);
-            });
+ function selectSticker(index) {
+    document.querySelectorAll('.sticker-item').forEach((item, i) => {
+        item.classList.toggle('active', i === index);
+    });
 
-            const pos = latLngToVector3(stickerData[index].lat, stickerData[index].lng);
-            const targetPos = pos.clone().multiplyScalar(2.2);
-            
-            camera.position.lerp(targetPos, 0.3);
+    // Reset all pins to original color
+    stickerData.forEach((_, i) => {
+        const spriteContainer = markerGroup.children[i];
+        const sprite = spriteContainer.children[0];
+        sprite.material.color.setHex(0xffffff); // White
+    });
+
+    // Change selected pin color
+    const spriteContainer = markerGroup.children[index];
+    const sprite = spriteContainer.children[0];
+    sprite.material.color.setHex(0xe74c3c); // Red
+
+    // Get the sprite container's world position (accounts for globe rotation)
+    const worldPos = new THREE.Vector3();
+    spriteContainer.getWorldPosition(worldPos);
+    
+    // Animate camera to orbit around the pin's current world location
+    const targetDistance = 2.5;
+    const targetPos = worldPos.clone().normalize().multiplyScalar(targetDistance);
+    
+    // Smoothly animate camera over 1 second
+    const startPos = camera.position.clone();
+    const startTime = Date.now();
+    const duration = 1000;
+    
+    function animateCamera() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Smooth easing function
+        const easeProgress = progress < 0.5 
+            ? 2 * progress * progress 
+            : -1 + (4 - 2 * progress) * progress;
+        
+        camera.position.lerpVectors(startPos, targetPos, easeProgress);
+        camera.lookAt(0, 0, 0);
+        
+        if (progress < 1) {
+            requestAnimationFrame(animateCamera);
         }
-
+    }
+    
+    animateCamera();
+}     
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
