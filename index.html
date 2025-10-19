@@ -118,7 +118,7 @@
         }
         
         .logo img {
-            height: 60px;
+            height: 100px;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
         }
         
@@ -265,7 +265,6 @@
         const textureLoader = new THREE.TextureLoader();
         const dayTexture = textureLoader.load('./data/1_earth_16k.jpg');
         const nightTexture = textureLoader.load('./data/5_night_16k.jpg');
-        const starfieldTexture = textureLoader.load('./data/starfield.png');
         
         // Set color space for proper color rendering
         dayTexture.colorSpace = THREE.SRGBColorSpace;
@@ -279,22 +278,11 @@
             uniforms: {
                 uDayTexture: new THREE.Uniform(dayTexture),
                 uNightTexture: new THREE.Uniform(nightTexture),
-                uSunDirection: new THREE.Uniform(new THREE.Vector3(1, 0.5, 1).normalize())
+                uSunDirection: new THREE.Uniform(new THREE.Vector3(-1, 0.5, 0.2).normalize())
             }
         });
         const globe = new THREE.Mesh(globeGeometry, globeMaterial);
         scene.add(globe);
-
-        // Create starfield background sphere
-        const starfieldGeometry = new THREE.SphereGeometry(500, 32, 32);
-        const starfieldMaterial = new THREE.MeshBasicMaterial({
-            map: starfieldTexture,
-            side: THREE.BackSide,
-            castShadow: false,
-            receiveShadow: false
-        });
-        const starfield = new THREE.Mesh(starfieldGeometry, starfieldMaterial);
-        scene.add(starfield);
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -320,7 +308,7 @@
 
         // Load pointer icon
         const textureLoader2 = new THREE.TextureLoader();
-        const pointerTexture = textureLoader2.load('./data/map-pointer.png');
+        const pointerTexture = textureLoader2.load('./data/mappointer.png');
         
         stickerData.forEach((sticker, index) => {
             const pos = latLngToVector3(sticker.lat, sticker.lng);
@@ -411,7 +399,7 @@
             requestAnimationFrame(animate);
             
             if (!isDragging) {
-                globe.rotation.y += 0.0002;
+                globe.rotation.y += 0.0005;
             }
 
             renderer.render(scene, camera);
