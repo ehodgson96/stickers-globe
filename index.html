@@ -366,7 +366,7 @@
         });
         const starfield = new THREE.Mesh(starfieldGeometry, starfieldMaterial);
         scene.add(starfield);
-        const globeGeometry = new THREE.SphereGeometry(1, 64, 64);
+        const globeGeometry = new THREE.SphereGeometry(1, 16, 10);
         const globeMaterial = new THREE.ShaderMaterial({
             vertexShader: vertexShader,
             fragmentShader: fragmentShader,
@@ -526,7 +526,7 @@
     spriteContainer.getWorldPosition(worldPos);
             
     // Animate camera to orbit around the pin's current world location
-            const targetDistance = 2.5;
+            const targetDistance = 1.5;
     const targetPos = worldPos.clone().normalize().multiplyScalar(targetDistance);
             
             // Smoothly animate camera over 1 second
