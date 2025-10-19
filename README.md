@@ -1,1 +1,1 @@
-# StickerEarth
+# Sticker Globe
