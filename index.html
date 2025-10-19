@@ -1,96 +1,430 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sticker Globe</title>
-  <style>
-    html, body { height: 100%; margin: 0; background: #0b1020; color: #eee; font-family: system-ui, sans-serif; }
-    #globe { position: fixed; inset: 0; }
-    .panel {
-      position: fixed; left: 12px; top: 12px; background: rgba(0,0,0,.55);
-      padding: 10px 12px; border-radius: 8px; backdrop-filter: blur(6px);
-      max-width: min(420px, 86vw); line-height: 1.35;
-    }
-    .panel h1 { margin: 0 0 .35rem 0; font-size: 1.1rem; }
-    .panel a { color: #8bd3ff; text-decoration: none; }
-    .tooltip {
-      position: absolute; pointer-events: none; transform: translate(-50%, -120%);
-      background: rgba(0,0,0,.8); padding: 6px 8px; border-radius: 6px;
-      font-size: 12px; color: #fff; white-space: nowrap;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Sticker Globe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+        }
+        
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        #globe-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        .sidebar {
+            width: 320px;
+            background: #1a1a1a;
+            overflow-y: auto;
+            padding: 20px;
+            border-left: 1px solid #333;
+        }
+        
+        .header {
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .sticker-item {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .sticker-item:hover {
+            background: #333;
+            border-color: #e74c3c;
+            transform: translateX(-5px);
+        }
+        
+        .sticker-item.active {
+            background: #e74c3c;
+            color: #000;
+            border-color: #c0392b;
+        }
+        
+        .sticker-coords {
+            font-family: monospace;
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+        
+        .sticker-date {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 3px;
+        }
+        
+        .sticker-count {
+            font-size: 14px;
+            color: #e74c3c;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(26, 26, 26, 0.9);
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            font-size: 12px;
+            z-index: 100;
+        }
+        
+        .controls p {
+            margin: 5px 0;
+            color: #aaa;
+        }
+        
+        .logo {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+        
+        .logo img {
+            height: 60px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: 200px;
+                border-left: none;
+                border-top: 1px solid #333;
+            }
+            #globe-container {
+                height: calc(100vh - 200px);
+            }
+        }
+    </style>
 </head>
 <body>
-  <div id="globe"></div>
+    <div class="container">
+        <div id="globe-container">
+            <div class="logo">
+                <img src="./data/ShroomSquad.png" alt="Shroom Squad Logo">
+            </div>
+            <div class="controls">
+                <p>🖱️ Drag to rotate</p>
+                <p>🔍 Scroll to zoom</p>
+            </div>
+        </div>
+        <div class="sidebar">
+            <div class="header">
+                <h1>Sticker Spots</h1>
+                <p>Your global sticker collection</p>
+            </div>
+            <div class="sticker-count" id="sticker-count"></div>
+            <div id="sticker-list"></div>
+        </div>
+    </div>
 
-  <div class="panel">
-    <h1>Sticker Globe</h1>
-    <div>Pins are scraped from Instagram captions that include coordinates in brackets, e.g. <code>(53.485999, -2.235444)</code>.</div>
-    <div style="margin-top:.4rem">Add new posts → update <code>data/stickers.json</code> → push.</div>
-  </div>
-
-  <div id="tt" class="tooltip" style="display:none;"></div>
-
-  <!-- Globe.gl via jsDelivr CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/globe.gl@4.6.8/globe.gl.min.js"></script>
-  <!-- three.js is bundled by globe.gl; no separate import needed -->
-
-  <script>
-    const el = document.getElementById('globe');
-    const tooltip = document.getElementById('tt');
-
-    // Create the globe
-    const world = Globe()
-      (el)
-      .backgroundColor('#0b1020')
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
-      .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
-      .showAtmosphere(true)
-      .atmosphereColor('#72c3ff')
-      .atmosphereAltitude(0.18)
-      .pointAltitude(0.015)
-      .pointRadius(0.6)      // only used if you switch to .pointsData
-      .enablePointerInteraction(true);
-
-    // Load your data
-    fetch('data/stickers.json')
-      .then(r => r.json())
-      .then(points => {
-        // Use "arcs" with zero-length (or small) to get nice sprites,
-        // or use .labelsData / .pointsData. Here we’ll use custom HTML sprites.
-        world
-          .labelsData(points)
-          .labelLat(d => d.lat)
-          .labelLng(d => d.lng)
-          .labelText(d => '📍')
-          .labelSize(() => 1.2)
-          .labelResolution(2)
-          .labelColor(() => 'rgba(255,255,255,0.95)')
-          .onLabelClick(d => d.link && window.open(d.link, '_blank', 'noopener'))
-          .onLabelHover((d, prev) => {
-            if (d) {
-              tooltip.style.display = 'block';
-              tooltip.textContent = `${d.caption || 'Sticker'} (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})`;
-            } else {
-              tooltip.style.display = 'none';
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Sample sticker data
+        const stickerData = [
+            {
+                lat: 53.4859986,
+                lng: -2.2354442,
+                date: "05/04/25",
+                title: "Red Post Box"
+            },
+            {
+                lat: 51.5074,
+                lng: -0.1278,
+                date: "12/03/25",
+                title: "London Spot"
+            },
+            {
+                lat: 48.8566,
+                lng: 2.3522,
+                date: "20/02/25",
+                title: "Paris Location"
+            },
+            {
+                lat: 52.5200,
+                lng: 13.4050,
+                date: "08/02/25",
+                title: "Berlin Find"
+            },
+            {
+                lat: 55.7558,
+                lng: 37.6173,
+                date: "15/01/25",
+                title: "Moscow Sticker"
+            },
+            {
+                lat: 35.6762,
+                lng: 139.6503,
+                date: "22/12/24",
+                title: "Tokyo Discovery"
+            },
+            {
+                lat: -33.8688,
+                lng: 151.2093,
+                date: "10/12/24",
+                title: "Sydney Find"
             }
-          });
+        ];
 
-        // Start camera somewhere sensible: centre on first point or Europe
-        const start = points[0] || { lat: 51.5074, lng: -0.1278 };
-        world.pointOfView({ lat: start.lat, lng: start.lng, altitude: 2.2 }, 1000);
+        // Vertex shader
+        const vertexShader = `
+            uniform mat4 uMatrix;
+            
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            void main() {
+                vUv = uv;
+                vNormal = normalize(normalMatrix * normal);
+                vPosition = (modelMatrix * vec4(position, 1.0)).xyz;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
 
-        // Keep tooltip near the mouse
-        el.addEventListener('mousemove', (e) => {
-          tooltip.style.left = e.clientX + 'px';
-          tooltip.style.top = e.clientY + 'px';
+        // Fragment shader with day/night mixing
+        const fragmentShader = `
+            uniform sampler2D uDayTexture;
+            uniform sampler2D uNightTexture;
+            uniform vec3 uSunDirection;
+            
+            varying vec2 vUv;
+            varying vec3 vNormal;
+            varying vec3 vPosition;
+            
+            void main() {
+                vec3 dayColor = texture2D(uDayTexture, vUv).rgb;
+                vec3 nightColor = texture2D(uNightTexture, vUv).rgb;
+                
+                // Calculate dot product between normal and sun direction
+                float sunIntensity = dot(vNormal, uSunDirection);
+                
+                // Smoothstep for smooth transition between day and night
+                float mixFactor = smoothstep(-0.5, 0.5, sunIntensity);
+                
+                vec3 color = mix(nightColor, dayColor, mixFactor);
+                
+                gl_FragColor = vec4(color, 1.0);
+            }
+        `;
+
+        // Three.js setup
+        const container = document.getElementById('globe-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setClearColor(0x0a0a0a);
+        container.appendChild(renderer.domElement);
+
+        camera.position.z = 2.5;
+
+        // Load textures
+        const textureLoader = new THREE.TextureLoader();
+        const dayTexture = textureLoader.load('./data/1_earth_16k.jpg');
+        const nightTexture = textureLoader.load('./data/5_night_16k.jpg');
+        const starfieldTexture = textureLoader.load('./data/starfield.png');
+        
+        // Set color space for proper color rendering
+        dayTexture.colorSpace = THREE.SRGBColorSpace;
+        nightTexture.colorSpace = THREE.SRGBColorSpace;
+
+        // Create globe with shader material
+        const globeGeometry = new THREE.SphereGeometry(1, 64, 64);
+        const globeMaterial = new THREE.ShaderMaterial({
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            uniforms: {
+                uDayTexture: new THREE.Uniform(dayTexture),
+                uNightTexture: new THREE.Uniform(nightTexture),
+                uSunDirection: new THREE.Uniform(new THREE.Vector3(1, 0.5, 1).normalize())
+            }
         });
-      });
+        const globe = new THREE.Mesh(globeGeometry, globeMaterial);
+        scene.add(globe);
 
-    // Make the canvas resize-friendly
-    window.addEventListener('resize', () => world.width(el.clientWidth).height(el.clientHeight));
-    world.width(el.clientWidth).height(el.clientHeight);
-  </script>
+        // Create starfield background sphere
+        const starfieldGeometry = new THREE.SphereGeometry(500, 32, 32);
+        const starfieldMaterial = new THREE.MeshBasicMaterial({
+            map: starfieldTexture,
+            side: THREE.BackSide,
+            castShadow: false,
+            receiveShadow: false
+        });
+        const starfield = new THREE.Mesh(starfieldGeometry, starfieldMaterial);
+        scene.add(starfield);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 0.8);
+        pointLight.position.set(5, 3, 5);
+        scene.add(pointLight);
+
+        // Add markers
+        const markers = [];
+        const markerGroup = new THREE.Group();
+        globe.add(markerGroup);
+
+        function latLngToVector3(lat, lng) {
+            const phi = (90 - lat) * Math.PI / 180;
+            const theta = (lng + 180) * Math.PI / 180;
+            const x = -Math.sin(phi) * Math.cos(theta);
+            const y = Math.cos(phi);
+            const z = Math.sin(phi) * Math.sin(theta);
+            return new THREE.Vector3(x, y, z).normalize();
+        }
+
+        // Load pointer icon
+        const textureLoader2 = new THREE.TextureLoader();
+        const pointerTexture = textureLoader2.load('./data/map-pointer.png');
+        
+        stickerData.forEach((sticker, index) => {
+            const pos = latLngToVector3(sticker.lat, sticker.lng);
+            
+            // Create sprite for the pointer icon
+            const spriteMaterial = new THREE.SpriteMaterial({
+                map: pointerTexture,
+                sizeAttenuation: true
+            });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(0.15, 0.15, 1);
+            sprite.position.copy(pos.multiplyScalar(1.05)); // Slightly offset from surface
+            sprite.userData = { index, sticker };
+            
+            markerGroup.add(sprite);
+            markers.push(sprite);
+        });
+
+        // Mouse interaction
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                globe.rotation.y += deltaX * 0.005;
+                globe.rotation.x += deltaY * 0.005;
+                
+                // Rotate sun direction with the globe
+                const sunDir = globeMaterial.uniforms.uSunDirection.value;
+                const axis1 = new THREE.Vector3(0, 1, 0); // Y axis for horizontal drag
+                const axis2 = new THREE.Vector3(1, 0, 0); // X axis for vertical drag
+                
+                sunDir.applyAxisAngle(axis1, deltaX * 0.005);
+                sunDir.applyAxisAngle(axis2, deltaY * 0.005);
+            }
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+
+        container.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Zoom
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            camera.position.z += e.deltaY * 0.001;
+            camera.position.z = Math.max(1.5, Math.min(5, camera.position.z));
+        });
+
+        // Sidebar
+        const stickerList = document.getElementById('sticker-list');
+        const stickerCount = document.getElementById('sticker-count');
+        
+        stickerCount.textContent = `${stickerData.length} stickers found`;
+
+        stickerData.forEach((sticker, index) => {
+            const item = document.createElement('div');
+            item.className = 'sticker-item';
+            item.innerHTML = `
+                <div><strong>${sticker.title}</strong></div>
+                <div class="sticker-date">${sticker.date}</div>
+                <div class="sticker-coords">${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°</div>
+            `;
+            item.addEventListener('click', () => selectSticker(index));
+            stickerList.appendChild(item);
+        });
+
+        function selectSticker(index) {
+            document.querySelectorAll('.sticker-item').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+
+            const pos = latLngToVector3(stickerData[index].lat, stickerData[index].lng);
+            const targetPos = pos.clone().multiplyScalar(2.2);
+            
+            camera.position.lerp(targetPos, 0.3);
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (!isDragging) {
+                globe.rotation.y += 0.0002;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+    </script>
 </body>
 </html>
