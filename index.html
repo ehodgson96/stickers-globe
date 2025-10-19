@@ -30,7 +30,7 @@
         
         .sidebar {
             width: 320px;
-            background: #1a1a2eb4;
+            background: #1a1a2eb9;
             overflow-y: auto;
             padding: 0;
             border-left: 3px solid #e74c3c;
@@ -124,8 +124,8 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 20px;
-            height: 20px;
+            width: 50px;
+            height: 50px;
             background: #333;
             border: 1px solid #555;
             text-decoration: none;
@@ -245,58 +245,23 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Sample sticker data
-        const stickerData = [
-            {
-                lat: 53.4859986,
-                lng: -2.2354442,
-                date: "05/04/25",
-                title: "Red Post Box",
-                instagram: "https://instagram.com"
-            },
-            {
-                lat: 51.5074,
-                lng: -0.1278,
-                date: "12/03/25",
-                title: "London Spot",
-                instagram: "https://instagram.com"
-            },
-            {
-                lat: 48.8566,
-                lng: 2.3522,
-                date: "20/02/25",
-                title: "Paris Location",
-                instagram: "https://instagram.com"
-            },
-            {
-                lat: 52.5200,
-                lng: 13.4050,
-                date: "08/02/25",
-                title: "Berlin Find",
-                instagram: "https://instagram.com"
-            },
-            {
-                lat: 55.7558,
-                lng: 37.6173,
-                date: "15/01/25",
-                title: "Moscow Sticker",
-                instagram: "https://instagram.com"
-            },
-            {
-                lat: 35.6762,
-                lng: 139.6503,
-                date: "22/12/24",
-                title: "Tokyo Discovery",
-                instagram: "https://instagram.com"
-            },
-            {
-                lat: -33.8688,
-                lng: 151.2093,
-                date: "10/12/24",
-                title: "Sydney Find",
-                instagram: "https://instagram.com"
-            }
-        ];
+        // Load sticker data from JSON file
+        let stickerData = [];
+        
+        fetch('./data/stickers.json')
+            .then(response => response.json())
+            .then(data => {
+                stickerData = data;
+                initializeApp();
+            })
+            .catch(error => {
+                console.error('Error loading stickers.json:', error);
+                // Fallback to empty data if file fails to load
+                stickerData = [];
+                initializeApp();
+            });
+        
+        function initializeApp() {
 
         // Vertex shader
         const vertexShader = `
@@ -525,7 +490,7 @@
             item.innerHTML = `
                 <div class="sticker-title">
                     <span>${sticker.title}</span>
-                    <a href="${sticker.instagram}" target="_blank" rel="noopener noreferrer" class="sticker-link" title="Open Instagram post">📷</a>
+                    <a href="${sticker.link}" target="_blank" rel="noopener noreferrer" class="sticker-link" title="Open Instagram post">📷</a>
                 </div>
                 <div class="sticker-coords">${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°</div>
                 <div class="sticker-date">${sticker.date}</div>
@@ -607,6 +572,7 @@
             camera.updateProjectionMatrix();
             renderer.setSize(container.clientWidth, container.clientHeight);
         });
+    }
     </script>
 </body>
 </html>
