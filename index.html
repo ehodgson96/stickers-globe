@@ -14,11 +14,9 @@
     }
     .panel h1 { margin: 0 0 .35rem 0; font-size: 1.1rem; }
     .panel a { color: #8bd3ff; text-decoration: none; }
-    .tooltip {
-      position: absolute; pointer-events: none; transform: translate(-50%, -120%);
+    .tooltip { position: absolute; pointer-events: none; transform: translate(-50%, -120%);
       background: rgba(0,0,0,.8); padding: 6px 8px; border-radius: 6px;
-      font-size: 12px; color: #fff; white-space: nowrap;
-    }
+      font-size: 12px; color: #fff; white-space: nowrap; }
   </style>
 </head>
 <body>
@@ -32,15 +30,79 @@
 
   <div id="tt" class="tooltip" style="display:none;"></div>
 
-  <!-- Globe.gl via jsDelivr CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/globe.gl@4.6.8/globe.gl.min.js"></script>
-  <!-- three.js is bundled by globe.gl; no separate import needed -->
-
+  <!-- =========================
+       OPTION A: UMD (global) build
+       ========================= -->
+  <script src="https://unpkg.com/globe.gl@4.6.8"></script>
   <script>
+    // If you use Option A, Globe is available on window.Globe
+    (function () {
+      const el = document.getElementById('globe');
+      const tooltip = document.getElementById('tt');
+
+      const world = Globe()
+        (el)
+        .backgroundColor('#0b1020')
+        .globeImageUrl('//unpkg.com/three-globe/example/img/earth-blue-marble.jpg')
+        .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
+        .showAtmosphere(true)
+        .atmosphereColor('#72c3ff')
+        .atmosphereAltitude(0.18)
+        .enablePointerInteraction(true);
+
+      fetch('data/stickers.json')
+        .then(r => {
+          if (!r.ok) throw new Error(`Failed to load data/stickers.json (${r.status})`);
+          return r.json();
+        })
+        .then(points => {
+          world
+            .labelsData(points)
+            .labelLat(d => d.lat)
+            .labelLng(d => d.lng)
+            .labelText(() => '📍')
+            .labelSize(() => 1.2)
+            .labelResolution(2)
+            .labelColor(() => 'rgba(255,255,255,0.95)')
+            .onLabelClick(d => d.link && window.open(d.link, '_blank', 'noopener'))
+            .onLabelHover((d) => {
+              if (d) {
+                tooltip.style.display = 'block';
+                tooltip.textContent = `${d.caption || 'Sticker'} (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})`;
+              } else {
+                tooltip.style.display = 'none';
+              }
+            });
+
+          const start = points[0] || { lat: 51.5074, lng: -0.1278 };
+          world.pointOfView({ lat: start.lat, lng: start.lng, altitude: 2.2 }, 1000);
+
+          el.addEventListener('mousemove', (e) => {
+            tooltip.style.left = e.clientX + 'px';
+            tooltip.style.top = e.clientY + 'px';
+          });
+
+          // Size to container
+          world.width(el.clientWidth).height(el.clientHeight);
+          window.addEventListener('resize', () => world.width(el.clientWidth).height(el.clientHeight));
+        })
+        .catch(err => {
+          console.error(err);
+          alert(err.message);
+        });
+    })();
+  </script>
+
+  <!-- =========================
+       OPTION B: ES Module build
+       (Use this INSTEAD of Option A)
+       =========================
+  <script type="module">
+    import Globe from 'https://cdn.jsdelivr.net/npm/globe.gl@4.6.8/dist/globe.gl.min.js';
+
     const el = document.getElementById('globe');
     const tooltip = document.getElementById('tt');
 
-    // Create the globe
     const world = Globe()
       (el)
       .backgroundColor('#0b1020')
@@ -49,48 +111,43 @@
       .showAtmosphere(true)
       .atmosphereColor('#72c3ff')
       .atmosphereAltitude(0.18)
-      .pointAltitude(0.015)
-      .pointRadius(0.6)      // only used if you switch to .pointsData
       .enablePointerInteraction(true);
 
-    // Load your data
-    fetch('data/stickers.json')
-      .then(r => r.json())
-      .then(points => {
-        // Use "arcs" with zero-length (or small) to get nice sprites,
-        // or use .labelsData / .pointsData. Here we’ll use custom HTML sprites.
-        world
-          .labelsData(points)
-          .labelLat(d => d.lat)
-          .labelLng(d => d.lng)
-          .labelText(d => '📍')
-          .labelSize(() => 1.2)
-          .labelResolution(2)
-          .labelColor(() => 'rgba(255,255,255,0.95)')
-          .onLabelClick(d => d.link && window.open(d.link, '_blank', 'noopener'))
-          .onLabelHover((d, prev) => {
-            if (d) {
-              tooltip.style.display = 'block';
-              tooltip.textContent = `${d.caption || 'Sticker'} (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})`;
-            } else {
-              tooltip.style.display = 'none';
-            }
-          });
+    const r = await fetch('data/stickers.json');
+    if (!r.ok) throw new Error(`Failed to load data/stickers.json (${r.status})`);
+    const points = await r.json();
 
-        // Start camera somewhere sensible: centre on first point or Europe
-        const start = points[0] || { lat: 51.5074, lng: -0.1278 };
-        world.pointOfView({ lat: start.lat, lng: start.lng, altitude: 2.2 }, 1000);
-
-        // Keep tooltip near the mouse
-        el.addEventListener('mousemove', (e) => {
-          tooltip.style.left = e.clientX + 'px';
-          tooltip.style.top = e.clientY + 'px';
-        });
+    world
+      .labelsData(points)
+      .labelLat(d => d.lat)
+      .labelLng(d => d.lng)
+      .labelText(() => '📍')
+      .labelSize(() => 1.2)
+      .labelResolution(2)
+      .labelColor(() => 'rgba(255,255,255,0.95)')
+      .onLabelClick(d => d.link && window.open(d.link, '_blank', 'noopener'))
+      .onLabelHover((d) => {
+        const tip = document.getElementById('tt');
+        if (d) {
+          tip.style.display = 'block';
+          tip.textContent = `${d.caption || 'Sticker'} (${d.lat.toFixed(4)}, ${d.lng.toFixed(4)})`;
+        } else {
+          tip.style.display = 'none';
+        }
       });
 
-    // Make the canvas resize-friendly
-    window.addEventListener('resize', () => world.width(el.clientWidth).height(el.clientHeight));
+    const start = points[0] || { lat: 51.5074, lng: -0.1278 };
+    world.pointOfView({ lat: start.lat, lng: start.lng, altitude: 2.2 }, 1000);
+
+    el.addEventListener('mousemove', (e) => {
+      const tip = document.getElementById('tt');
+      tip.style.left = e.clientX + 'px';
+      tip.style.top = e.clientY + 'px';
+    });
+
     world.width(el.clientWidth).height(el.clientHeight);
+    window.addEventListener('resize', () => world.width(el.clientWidth).height(el.clientHeight));
   </script>
+  -->
 </body>
 </html>
