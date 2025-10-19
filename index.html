@@ -270,7 +270,41 @@
         dayTexture.colorSpace = THREE.SRGBColorSpace;
         nightTexture.colorSpace = THREE.SRGBColorSpace;
 
-        // Create globe with shader material
+        // Create procedural starfield
+        function createStarfield() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 2048;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            
+            // Black background
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Generate random stars with varying brightness
+            for (let i = 0; i < 1000; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const brightness = Math.random();
+                const size = brightness * 1.5;
+                
+                ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+                ctx.fillRect(x, y, size, size);
+            }            
+            return new THREE.CanvasTexture(canvas);
+        }
+        
+        // Create starfield sphere
+        const starfieldGeometry = new THREE.SphereGeometry(100, 64, 64);
+        const starfieldTexture = createStarfield();
+        const starfieldMaterial = new THREE.MeshBasicMaterial({
+            map: starfieldTexture,
+            side: THREE.BackSide,
+            castShadow: false,
+            receiveShadow: false
+        });
+        const starfield = new THREE.Mesh(starfieldGeometry, starfieldMaterial);
+        scene.add(starfield);
         const globeGeometry = new THREE.SphereGeometry(1, 64, 64);
         const globeMaterial = new THREE.ShaderMaterial({
             vertexShader: vertexShader,
@@ -313,6 +347,10 @@
         stickerData.forEach((sticker, index) => {
             const pos = latLngToVector3(sticker.lat, sticker.lng);
             
+            // Create container for the sprite
+            const spriteContainer = new THREE.Object3D();
+            spriteContainer.position.copy(pos.multiplyScalar(1.02)); // Slightly offset from surface
+            
             // Create sprite for the pointer icon
             const spriteMaterial = new THREE.SpriteMaterial({
                 map: pointerTexture,
@@ -320,10 +358,11 @@
             });
             const sprite = new THREE.Sprite(spriteMaterial);
             sprite.scale.set(0.15, 0.15, 1);
-            sprite.position.copy(pos.multiplyScalar(1.05)); // Slightly offset from surface
+            sprite.position.y = 0.03; // Offset so pin point aligns with location
             sprite.userData = { index, sticker };
             
-            markerGroup.add(sprite);
+            spriteContainer.add(sprite);
+            markerGroup.add(spriteContainer);
             markers.push(sprite);
         });
 
@@ -342,6 +381,10 @@
                 
                 globe.rotation.y += deltaX * 0.005;
                 globe.rotation.x += deltaY * 0.005;
+                
+                // Rotate starfield opposite to globe
+                starfield.rotation.y += deltaX * 0.005;
+                starfield.rotation.x += deltaY * 0.005;
                 
                 // Rotate sun direction with the globe
                 const sunDir = globeMaterial.uniforms.uSunDirection.value;
