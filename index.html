@@ -1,269 +1,272 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="./data/mapPointer.png" type="image/png">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="./data/mapPointer.png" type="image/png" />
     <title>Shroom Sticker Globe</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: #fff;
-            overflow: hidden;
-        }
-        
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        background: #0a0a0a;
+        color: #fff;
+        overflow: hidden;
+      }
+
+      .container {
+        display: flex;
+        height: 100vh;
+      }
+
+      #globe-container {
+        flex: 1;
+        position: relative;
+      }
+
+      .sidebar {
+        width: 320px;
+        background: #1a1a2eb9;
+        overflow-y: auto;
+        padding: 0;
+        border-left: 3px solid #e74c3c;
+        display: flex;
+        flex-direction: column;
+        font-family: "Courier New", monospace;
+        image-rendering: pixelated;
+        box-shadow: inset -4px 0 8px rgba(0, 0, 0, 0.5);
+      }
+
+      .header {
+        padding: 20px;
+        background: #0f0f1e;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        border-bottom: 3px solid #e74c3c;
+        box-shadow: 0 4px 0 rgba(231, 76, 60, 0.3);
+      }
+
+      .header h1 {
+        font-size: 18px;
+        margin-bottom: 5px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        color: #e74c3c;
+        text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+      }
+
+      .header p {
+        font-size: 10px;
+        opacity: 0.8;
+        letter-spacing: 1px;
+        color: #aaa;
+      }
+
+      .sticker-count {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 12px 15px;
+        background: #16213e;
+        border-bottom: 2px solid #e74c3c;
+        border-top: 2px solid #e74c3c;
+        color: #e74c3c;
+        letter-spacing: 1px;
+      }
+
+      #sticker-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+      }
+
+      .sticker-item {
+        background: #16213e;
+        border: 2px solid #333;
+        padding: 12px;
+        margin-bottom: 8px;
+        cursor: pointer;
+        transition: all 0.1s linear;
+        position: relative;
+        box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4),
+          inset -1px -1px 0 rgba(0, 0, 0, 0.3);
+      }
+
+      .sticker-item:hover {
+        background: #1a2847;
+        border-color: #e74c3c;
+        box-shadow: 4px 4px 0 rgba(231, 76, 60, 0.3),
+          inset -1px -1px 0 rgba(0, 0, 0, 0.5);
+        transform: translate(-2px, -2px);
+      }
+
+      .sticker-item.active {
+        background: #e74c3c;
+        border-color: #c0392b;
+        color: #fff;
+        box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5),
+          inset 1px 1px 0 rgba(255, 255, 255, 0.2);
+        transform: translate(-3px, -3px);
+      }
+
+      .sticker-title {
+        font-weight: 700;
+        font-size: 12px;
+        margin-bottom: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        letter-spacing: 0.5px;
+      }
+
+      .sticker-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 50px;
+        height: 50px;
+        background: #333;
+        border: 1px solid #555;
+        text-decoration: none;
+        color: inherit;
+        font-size: 10px;
+        cursor: pointer;
+        box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.1s linear;
+      }
+
+      .sticker-item:hover .sticker-link {
+        background: #e74c3c;
+        border-color: #c0392b;
+      }
+
+      .sticker-item.active .sticker-link {
+        background: rgba(0, 0, 0, 0.2);
+        border-color: rgba(0, 0, 0, 0.4);
+      }
+
+      .sticker-coords {
+        font-family: "Courier New", monospace;
+        font-size: 9px;
+        margin-bottom: 5px;
+        color: #88ff88;
+        letter-spacing: 1px;
+        text-shadow: 0 0 3px rgba(136, 255, 136, 0.3);
+      }
+
+      .sticker-date {
+        font-size: 10px;
+        color: #aaa;
+        letter-spacing: 0.5px;
+      }
+
+      #sticker-list::-webkit-scrollbar {
+        width: 12px;
+      }
+
+      #sticker-list::-webkit-scrollbar-track {
+        background: #0f0f1e;
+        border-left: 2px solid #333;
+      }
+
+      #sticker-list::-webkit-scrollbar-thumb {
+        background: #e74c3c;
+        border: 1px solid #c0392b;
+        box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.5);
+      }
+
+      .controls {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(26, 26, 26, 0.9);
+        padding: 15px 20px;
+        border-radius: 8px;
+        border: 1px solid #333;
+        font-size: 12px;
+        z-index: 100;
+      }
+
+      .controls p {
+        margin: 5px 0;
+        color: #aaa;
+      }
+
+      .logo {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100;
+      }
+
+      .logo img {
+        height: 100px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+      }
+
+      @media (max-width: 768px) {
         .container {
-            display: flex;
-            height: 100vh;
+          flex-direction: column;
         }
-        
-        #globe-container {
-            flex: 1;
-            position: relative;
-        }
-        
         .sidebar {
-            width: 320px;
-            background: #1a1a2eb9;
-            overflow-y: auto;
-            padding: 0;
-            border-left: 3px solid #e74c3c;
-            display: flex;
-            flex-direction: column;
-            font-family: 'Courier New', monospace;
-            image-rendering: pixelated;
-            box-shadow: inset -4px 0 8px rgba(0, 0, 0, 0.5);
+          width: 100%;
+          height: 200px;
+          border-left: none;
+          border-top: 1px solid #333;
         }
-        
-        .header {
-            padding: 20px;
-            background: #0f0f1e;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            border-bottom: 3px solid #e74c3c;
-            box-shadow: 0 4px 0 rgba(231, 76, 60, 0.3);
+        #globe-container {
+          height: calc(100vh - 200px);
         }
-        
-        .header h1 {
-            font-size: 18px;
-            margin-bottom: 5px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: #e74c3c;
-            text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
-        }
-        
-        .header p {
-            font-size: 10px;
-            opacity: 0.8;
-            letter-spacing: 1px;
-            color: #aaa;
-        }
-        
-        .sticker-count {
-            font-size: 11px;
-            font-weight: 600;
-            padding: 12px 15px;
-            background: #16213e;
-            border-bottom: 2px solid #e74c3c;
-            border-top: 2px solid #e74c3c;
-            color: #e74c3c;
-            letter-spacing: 1px;
-        }
-        
-        #sticker-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 8px;
-        }
-        
-        .sticker-item {
-            background: #16213e;
-            border: 2px solid #333;
-            padding: 12px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.1s linear;
-            position: relative;
-            box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4), inset -1px -1px 0 rgba(0, 0, 0, 0.3);
-        }
-        
-        .sticker-item:hover {
-            background: #1a2847;
-            border-color: #e74c3c;
-            box-shadow: 4px 4px 0 rgba(231, 76, 60, 0.3), inset -1px -1px 0 rgba(0, 0, 0, 0.5);
-            transform: translate(-2px, -2px);
-        }
-        
-        .sticker-item.active {
-            background: #e74c3c;
-            border-color: #c0392b;
-            color: #fff;
-            box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5), inset 1px 1px 0 rgba(255, 255, 255, 0.2);
-            transform: translate(-3px, -3px);
-        }
-        
-        .sticker-title {
-            font-weight: 700;
-            font-size: 12px;
-            margin-bottom: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            letter-spacing: 0.5px;
-        }
-        
-        .sticker-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 50px;
-            height: 50px;
-            background: #333;
-            border: 1px solid #555;
-            text-decoration: none;
-            color: inherit;
-            font-size: 10px;
-            cursor: pointer;
-            box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.1);
-            transition: all 0.1s linear;
-        }
-        
-        .sticker-item:hover .sticker-link {
-            background: #e74c3c;
-            border-color: #c0392b;
-        }
-        
-        .sticker-item.active .sticker-link {
-            background: rgba(0, 0, 0, 0.2);
-            border-color: rgba(0, 0, 0, 0.4);
-        }
-        
-        .sticker-coords {
-            font-family: 'Courier New', monospace;
-            font-size: 9px;
-            margin-bottom: 5px;
-            color: #88ff88;
-            letter-spacing: 1px;
-            text-shadow: 0 0 3px rgba(136, 255, 136, 0.3);
-        }
-        
-        .sticker-date {
-            font-size: 10px;
-            color: #aaa;
-            letter-spacing: 0.5px;
-        }
-        
-        #sticker-list::-webkit-scrollbar {
-            width: 12px;
-        }
-        
-        #sticker-list::-webkit-scrollbar-track {
-            background: #0f0f1e;
-            border-left: 2px solid #333;
-        }
-        
-        #sticker-list::-webkit-scrollbar-thumb {
-            background: #e74c3c;
-            border: 1px solid #c0392b;
-            box-shadow: inset 1px 1px 0 rgba(0, 0, 0, 0.5);
-        }
-        
-        .controls {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(26, 26, 26, 0.9);
-            padding: 15px 20px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            font-size: 12px;
-            z-index: 100;
-        }
-        
-        .controls p {
-            margin: 5px 0;
-            color: #aaa;
-        }
-        
-        .logo {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-        }
-        
-        .logo img {
-            height: 100px;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-            }
-            .sidebar {
-                width: 100%;
-                height: 200px;
-                border-left: none;
-                border-top: 1px solid #333;
-            }
-            #globe-container {
-                height: calc(100vh - 200px);
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <div id="globe-container">
-            <div class="logo">
-                <img src="./data/ShroomSquad.png" alt="Shroom Squad Logo">
-            </div>
-            <div class="controls">
-                <p>🖱️ Drag to rotate</p>
-                <p>🔍 Scroll to zoom</p>
-            </div>
+      <div id="globe-container">
+        <div class="logo">
+          <img src="./data/ShroomSquad.png" alt="Shroom Squad Logo" />
         </div>
-        <div class="sidebar">
-            <div class="header">
-                <h1>Sticker Spots</h1>
-                <p>Your global sticker collection</p>
-            </div>
-            <div class="sticker-count" id="sticker-count"></div>
-            <div id="sticker-list"></div>
+        <div class="controls">
+          <p>🖱️ Drag to rotate</p>
+          <p>🔍 Scroll to zoom</p>
         </div>
+      </div>
+      <div class="sidebar">
+        <div class="header">
+          <h1>Sticker Spots</h1>
+          <p>Your global sticker collection</p>
+        </div>
+        <div class="sticker-count" id="sticker-count"></div>
+        <div id="sticker-list"></div>
+      </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Load sticker data from JSON file
-        let stickerData = [];
-        
-        fetch('./data/stickers.json')
-            .then(response => response.json())
-            .then(data => {
-                stickerData = data;
-                initializeApp();
-            })
-            .catch(error => {
-                console.error('Error loading stickers.json:', error);
-                // Fallback to empty data if file fails to load
-                stickerData = [];
-                initializeApp();
-            });
-        
-        function initializeApp() {
+      // Load sticker data from JSON file
+      let stickerData = [];
 
+      fetch("./data/stickers.json")
+        .then((response) => response.json())
+        .then((data) => {
+          stickerData = data;
+          initializeApp();
+        })
+        .catch((error) => {
+          console.error("Error loading stickers.json:", error);
+          // Fallback to empty data if file fails to load
+          stickerData = [];
+          initializeApp();
+        });
+
+      function initializeApp() {
         // Vertex shader
         const vertexShader = `
             uniform mat4 uMatrix;
@@ -298,7 +301,7 @@
                 float sunIntensity = dot(vNormal, uSunDirection);
                 
                 // Smoothstep for smooth transition between day and night
-                float mixFactor = smoothstep(-0.5, 0.5, sunIntensity);
+                float mixFactor = smoothstep(-0.3, 0.3, sunIntensity);
                 
                 vec3 color = mix(nightColor, dayColor, mixFactor);
                 
@@ -311,11 +314,19 @@
         `;
 
         // Three.js setup
-        const container = document.getElementById('globe-container');
+        const container = document.getElementById("globe-container");
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        
+        const camera = new THREE.PerspectiveCamera(
+          75,
+          window.innerWidth / window.innerHeight,
+          0.1,
+          10000
+        );
+        const renderer = new THREE.WebGLRenderer({
+          antialias: true,
+          alpha: true,
+        });
+
         renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.setClearColor(0x0a0a0a);
         container.appendChild(renderer.domElement);
@@ -324,60 +335,75 @@
 
         // Load textures
         const textureLoader = new THREE.TextureLoader();
-        const dayTexture = textureLoader.load('./data/1_earth_8k.jpg');
-        const nightTexture = textureLoader.load('./data/5_night_8k.jpg');
-        
+        const dayTexture = textureLoader.load("./data/1_earth_8k.jpg");
+        const nightTexture = textureLoader.load("./data/5_night_8k.jpg");
+
         // Set color space for proper color rendering
         dayTexture.colorSpace = THREE.SRGBColorSpace;
         nightTexture.colorSpace = THREE.SRGBColorSpace;
 
         // Create procedural starfield
         function createStarfield() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 2048;
-            canvas.height = 1024;
-            const ctx = canvas.getContext('2d');
-            
-            // Black background
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Generate random stars with varying brightness
-            for (let i = 0; i < 1000; i++) {
-                const x = Math.random() * canvas.width;
-                const y = Math.random() * canvas.height;
-                const brightness = Math.random();
-                const size = brightness * 1.5;
-                
-                ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
-                ctx.fillRect(x, y, size, size);
-            }
-            return new THREE.CanvasTexture(canvas);
+          const canvas = document.createElement("canvas");
+          canvas.width = 2048;
+          canvas.height = 1024;
+          const ctx = canvas.getContext("2d");
+
+          // Black background
+          ctx.fillStyle = "#000000";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Generate random stars with varying brightness
+          for (let i = 0; i < 1000; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const brightness = Math.random();
+            const size = brightness * 1.5;
+
+            ctx.fillStyle = `rgba(255, 255, 255, ${brightness})`;
+            ctx.fillRect(x, y, size, size);
+          }
+          return new THREE.CanvasTexture(canvas);
         }
-        
+
         // Create starfield sphere
         const starfieldGeometry = new THREE.SphereGeometry(100, 64, 64);
         const starfieldTexture = createStarfield();
         const starfieldMaterial = new THREE.MeshBasicMaterial({
-            map: starfieldTexture,
-            side: THREE.BackSide,
-            castShadow: false,
-            receiveShadow: false
+          map: starfieldTexture,
+          side: THREE.BackSide,
+          castShadow: false,
+          receiveShadow: false,
         });
         const starfield = new THREE.Mesh(starfieldGeometry, starfieldMaterial);
         scene.add(starfield);
         const globeGeometry = new THREE.SphereGeometry(1, 16, 10);
         const globeMaterial = new THREE.ShaderMaterial({
-            vertexShader: vertexShader,
-            fragmentShader: fragmentShader,
-            uniforms: {
-                uDayTexture: new THREE.Uniform(dayTexture),
-                uNightTexture: new THREE.Uniform(nightTexture),
-                uSunDirection: new THREE.Uniform(new THREE.Vector3(-1, 0.5, 0.2).normalize())
-            }
+          vertexShader: vertexShader,
+          fragmentShader: fragmentShader,
+          uniforms: {
+            uDayTexture: new THREE.Uniform(dayTexture),
+            uNightTexture: new THREE.Uniform(nightTexture),
+            uSunDirection: new THREE.Uniform(
+              new THREE.Vector3(-1, 0.5, 0.2).normalize()
+            ),
+          },
         });
         const globe = new THREE.Mesh(globeGeometry, globeMaterial);
         scene.add(globe);
+
+        // Create moon
+        const moonGeometry = new THREE.SphereGeometry(0.27, 8, 6);
+        const moonTexture = textureLoader.load("./data/moon.jpg"); // You'll need a moon texture
+        moonTexture.colorSpace = THREE.SRGBColorSpace;
+        const moonMaterial = new THREE.MeshStandardMaterial({
+          map: moonTexture,
+          roughness: 1,
+          metalness: 0,
+        });
+        const moon = new THREE.Mesh(moonGeometry, moonMaterial);
+        moon.position.set(3, 0, 0); // Starting position
+        globe.add(moon);
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -393,187 +419,209 @@
         globe.add(markerGroup);
 
         function latLngToVector3(lat, lng) {
-            const phi = (90 - lat) * Math.PI / 180;
-            const theta = (lng + 180) * Math.PI / 180;
-            const x = -Math.sin(phi) * Math.cos(theta);
-            const y = Math.cos(phi);
-            const z = Math.sin(phi) * Math.sin(theta);
-            return new THREE.Vector3(x, y, z).normalize();
+          const phi = ((90 - lat) * Math.PI) / 180;
+          const theta = ((lng + 180) * Math.PI) / 180;
+          const x = -Math.sin(phi) * Math.cos(theta);
+          const y = Math.cos(phi);
+          const z = Math.sin(phi) * Math.sin(theta);
+          return new THREE.Vector3(x, y, z).normalize();
         }
 
         // Load pointer icon
         const textureLoader2 = new THREE.TextureLoader();
-        const pointerTexture = textureLoader2.load('./data/mapPointer.png');
-        
+        const pointerTexture = textureLoader2.load("./data/mapPointer.png");
+
         stickerData.forEach((sticker, index) => {
-            const pos = latLngToVector3(sticker.lat, sticker.lng);
-            
-            // Create container for the sprite
-            const spriteContainer = new THREE.Object3D();
-            spriteContainer.position.copy(pos.multiplyScalar(1.02)); // Slightly offset from surface
-            
-            // Create sprite for the pointer icon
-            const spriteMaterial = new THREE.SpriteMaterial({
-                map: pointerTexture,
-                sizeAttenuation: true
-            });
-            const sprite = new THREE.Sprite(spriteMaterial);
-            sprite.scale.set(0.15, 0.15, 1);
-            sprite.position.y = 0.03; // Offset so pin point aligns with location
-            sprite.userData = { index, sticker };
-            
-            spriteContainer.add(sprite);
-            markerGroup.add(spriteContainer);
-            markers.push(sprite);
+          const pos = latLngToVector3(sticker.lat, sticker.lng);
+
+          // Create container for the sprite
+          const spriteContainer = new THREE.Object3D();
+          spriteContainer.position.copy(pos.multiplyScalar(1.02)); // Slightly offset from surface
+
+          // Create sprite for the pointer icon
+          const spriteMaterial = new THREE.SpriteMaterial({
+            map: pointerTexture,
+            sizeAttenuation: true,
+          });
+          const sprite = new THREE.Sprite(spriteMaterial);
+          sprite.scale.set(0.15, 0.15, 1);
+          sprite.position.y = 0.03; // Offset so pin point aligns with location
+          sprite.userData = { index, sticker };
+
+          spriteContainer.add(sprite);
+          markerGroup.add(spriteContainer);
+          markers.push(sprite);
         });
 
         // Mouse interaction
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
 
-        container.addEventListener('mousedown', (e) => {
-            isDragging = true;
+        container.addEventListener("mousedown", (e) => {
+          isDragging = true;
         });
 
-        container.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                const deltaX = e.clientX - previousMousePosition.x;
-                const deltaY = e.clientY - previousMousePosition.y;
-                
-                globe.rotation.y += deltaX * 0.005;
-                globe.rotation.x += deltaY * 0.005;
-                
-                // Rotate starfield opposite to globe
-                starfield.rotation.y += deltaX * 0.005;
-                starfield.rotation.x += deltaY * 0.005;
-                
-                // Rotate sun direction with the globe
-                const sunDir = globeMaterial.uniforms.uSunDirection.value;
-                const axis1 = new THREE.Vector3(0, 1, 0); // Y axis for horizontal drag
-                const axis2 = new THREE.Vector3(1, 0, 0); // X axis for vertical drag
-                
-                sunDir.applyAxisAngle(axis1, deltaX * 0.005);
-                sunDir.applyAxisAngle(axis2, deltaY * 0.005);
-            }
-            previousMousePosition = { x: e.clientX, y: e.clientY };
+        container.addEventListener("mousemove", (e) => {
+          if (isDragging) {
+            const deltaX = e.clientX - previousMousePosition.x;
+            const deltaY = e.clientY - previousMousePosition.y;
+
+            globe.rotation.y += deltaX * 0.005;
+            globe.rotation.x += deltaY * 0.005;
+
+            // Rotate starfield opposite to globe
+            starfield.rotation.y += deltaX * 0.005;
+            starfield.rotation.x += deltaY * 0.005;
+
+            // Rotate sun direction with the globe
+            const sunDir = globeMaterial.uniforms.uSunDirection.value;
+            const axis1 = new THREE.Vector3(0, 1, 0); // Y axis for horizontal drag
+            const axis2 = new THREE.Vector3(1, 0, 0); // X axis for vertical drag
+
+            sunDir.applyAxisAngle(axis1, deltaX * 0.005);
+            sunDir.applyAxisAngle(axis2, deltaY * 0.005);
+          }
+          previousMousePosition = { x: e.clientX, y: e.clientY };
         });
 
-        container.addEventListener('mouseup', () => {
-            isDragging = false;
+        container.addEventListener("mouseup", () => {
+          isDragging = false;
         });
 
         // Zoom
-        container.addEventListener('wheel', (e) => {
-            e.preventDefault();
-    
-    // Get current direction from camera to globe center
-    const direction = new THREE.Vector3(0, 0, 0).sub(camera.position).normalize();
-    
-    // Adjust distance while maintaining direction
-    const currentDistance = camera.position.length();
-    const newDistance = currentDistance + e.deltaY * 0.001;
-    const clampedDistance = Math.max(1.5, Math.min(5, newDistance));
-    
-    // Set camera position maintaining the direction but with new distance
-    camera.position.copy(direction.multiplyScalar(-clampedDistance));
-    camera.lookAt(0, 0, 0);
+        container.addEventListener("wheel", (e) => {
+          e.preventDefault();
+
+          // Get current direction from camera to globe center
+          const direction = new THREE.Vector3(0, 0, 0)
+            .sub(camera.position)
+            .normalize();
+
+          // Adjust distance while maintaining direction
+          const currentDistance = camera.position.length();
+          const newDistance = currentDistance + e.deltaY * 0.001;
+          const clampedDistance = Math.max(1.5, Math.min(5, newDistance));
+
+          // Set camera position maintaining the direction but with new distance
+          camera.position.copy(direction.multiplyScalar(-clampedDistance));
+          camera.lookAt(0, 0, 0);
         });
 
         // Sidebar
-        const stickerList = document.getElementById('sticker-list');
-        const stickerCount = document.getElementById('sticker-count');
-        
+        const stickerList = document.getElementById("sticker-list");
+        const stickerCount = document.getElementById("sticker-count");
+
         stickerCount.textContent = `${stickerData.length} stickers found`;
 
         stickerData.forEach((sticker, index) => {
-            const item = document.createElement('div');
-            item.className = 'sticker-item';
-            item.innerHTML = `
+          const item = document.createElement("div");
+          item.className = "sticker-item";
+          item.innerHTML = `
                 <div class="sticker-title">
                     <span>${sticker.title}</span>
-                    <a href="${sticker.link}" target="_blank" rel="noopener noreferrer" class="sticker-link" title="Open Instagram post">📷</a>
+                    <a href="${
+                      sticker.link
+                    }" target="_blank" rel="noopener noreferrer" class="sticker-link" title="Open Instagram post">📷</a>
                 </div>
-                <div class="sticker-coords">${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°</div>
+                <div class="sticker-coords">${sticker.lat.toFixed(
+                  4
+                )}°, ${sticker.lng.toFixed(4)}°</div>
                 <div class="sticker-date">${sticker.date}</div>
             `;
-            item.addEventListener('click', (e) => {
-                if (e.target.tagName !== 'A') {
-                    selectSticker(index);
-                }
-            });
-            stickerList.appendChild(item);
+          item.addEventListener("click", (e) => {
+            if (e.target.tagName !== "A") {
+              selectSticker(index);
+            }
+          });
+          stickerList.appendChild(item);
         });
 
         function selectSticker(index) {
-            document.querySelectorAll('.sticker-item').forEach((item, i) => {
-                item.classList.toggle('active', i === index);
-            });
+          document.querySelectorAll(".sticker-item").forEach((item, i) => {
+            item.classList.toggle("active", i === index);
+          });
 
-    // Reset all pins to original color
-    stickerData.forEach((_, i) => {
-        const spriteContainer = markerGroup.children[i];
-        const sprite = spriteContainer.children[0];
-        sprite.material.color.setHex(0xffffff); // White
-    });
+          // Reset all pins to original color
+          stickerData.forEach((_, i) => {
+            const spriteContainer = markerGroup.children[i];
+            const sprite = spriteContainer.children[0];
+            sprite.material.color.setHex(0xffffff); // White
+          });
 
-    // Change selected pin color
-    const spriteContainer = markerGroup.children[index];
-    const sprite = spriteContainer.children[0];
-    sprite.material.color.setHex(0xe74c3c); // Red
+          // Change selected pin color
+          const spriteContainer = markerGroup.children[index];
+          const sprite = spriteContainer.children[0];
+          sprite.material.color.setHex(0xe74c3c); // Red
 
-    // Get the sprite container's world position (accounts for globe rotation)
-    const worldPos = new THREE.Vector3();
-    spriteContainer.getWorldPosition(worldPos);
-            
-    // Animate camera to orbit around the pin's current world location
-            const targetDistance = 1.5;
-    const targetPos = worldPos.clone().normalize().multiplyScalar(targetDistance);
-            
-            // Smoothly animate camera over 1 second
-            const startPos = camera.position.clone();
-            const startTime = Date.now();
-            const duration = 1000;
-            
-            function animateCamera() {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                // Smooth easing function
-                const easeProgress = progress < 0.5 
-                    ? 2 * progress * progress 
-                    : -1 + (4 - 2 * progress) * progress;
-                
-                camera.position.lerpVectors(startPos, targetPos, easeProgress);
-        camera.lookAt(0, 0, 0);
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animateCamera);
-                }
+          // Get the sprite container's world position (accounts for globe rotation)
+          const worldPos = new THREE.Vector3();
+          spriteContainer.getWorldPosition(worldPos);
+
+          // Animate camera to orbit around the pin's current world location
+          const targetDistance = 1.5;
+          const targetPos = worldPos
+            .clone()
+            .normalize()
+            .multiplyScalar(targetDistance);
+
+          // Smoothly animate camera over 1 second
+          const startPos = camera.position.clone();
+          const startTime = Date.now();
+          const duration = 1000;
+
+          function animateCamera() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Smooth easing function
+            const easeProgress =
+              progress < 0.5
+                ? 2 * progress * progress
+                : -1 + (4 - 2 * progress) * progress;
+
+            camera.position.lerpVectors(startPos, targetPos, easeProgress);
+            camera.lookAt(0, 0, 0);
+
+            if (progress < 1) {
+              requestAnimationFrame(animateCamera);
             }
-            
-            animateCamera();
+          }
+
+          animateCamera();
         }
 
         // Animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            if (!isDragging) {
-                globe.rotation.y += 0.0005;
-            }
+        let moonOrbitAngle = 0;
+        const moonOrbitRadius = 3;
+        const moonOrbitSpeed = 0.001;
 
-            renderer.render(scene, camera);
+        function animate() {
+          requestAnimationFrame(animate);
+
+          if (!isDragging) {
+            globe.rotation.y += 0.0005;
+          }
+
+          // Orbit the moon around Earth
+          moonOrbitAngle += moonOrbitSpeed;
+          moon.position.x = Math.cos(moonOrbitAngle) * moonOrbitRadius;
+          moon.position.z = Math.sin(moonOrbitAngle) * moonOrbitRadius;
+
+          // Optional: Make moon rotate on its own axis
+          moon.rotation.y += 0.001;
+
+          renderer.render(scene, camera);
         }
 
         animate();
 
         // Handle window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = container.clientWidth / container.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
+        window.addEventListener("resize", () => {
+          camera.aspect = container.clientWidth / container.clientHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(container.clientWidth, container.clientHeight);
         });
-    }
+      }
     </script>
-</body>
+  </body>
 </html>
