@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="./assets/materials/MapPointer.png" type="image/png" />
+    <link
+      rel="icon"
+      href="./assets/materials/MapPointer.png"
+      type="image/png"
+    />
     <title>Shroom Sticker Globe</title>
     <!-- Pixel-style font -->
     <link
@@ -302,7 +306,10 @@
     <div class="container">
       <div id="globe-container">
         <div class="logo">
-          <img src="./assets/materials/ShroomSquad.png" alt="Shroom Squad Logo" />
+          <img
+            src="./assets/materials/ShroomSquad.png"
+            alt="Shroom Squad Logo"
+          />
         </div>
         <div class="controls">
           <p>🖱️ Drag to orbit</p>
@@ -414,12 +421,25 @@
           camera.lookAt(0, 0, 0);
         }
 
+        // Mobile UI hint
+        if ("ontouchstart" in window) {
+          const controls = document.querySelector(".controls");
+          controls.innerHTML = `
+            <p>👆 Drag to orbit</p>
+            <p>🤏 Pinch to zoom</p>
+            `;
+        }
+
         updateCameraFromOrbit();
 
         // Textures
         const textureLoader = new THREE.TextureLoader();
-        const dayTexture = textureLoader.load("./assets/materials/Earth_8k.jpg");
-        const nightTexture = textureLoader.load("./assets/materials/Night_8k.jpg");
+        const dayTexture = textureLoader.load(
+          "./assets/materials/Earth_8k.jpg"
+        );
+        const nightTexture = textureLoader.load(
+          "./assets/materials/Night_8k.jpg"
+        );
         dayTexture.colorSpace = THREE.SRGBColorSpace;
         nightTexture.colorSpace = THREE.SRGBColorSpace;
 
@@ -640,6 +660,61 @@
           markers.push(sprite);
         });
 
+        // ─── Globe marker interaction (select via raycasting) ───────────────
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        function handleMarkerSelection(intersectedSprite) {
+          const index = intersectedSprite.userData.index;
+          selectSticker(index);
+
+          // Scroll sidebar to the selected sticker
+          const listItem = document.querySelectorAll(".sticker-item")[index];
+          if (listItem) {
+            listItem.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }
+
+        // Mouse click (desktop)
+        container.addEventListener("click", (e) => {
+          // Ignore if dragging — prevents accidental clicks during orbiting
+          if (isDragging) return;
+
+          const rect = container.getBoundingClientRect();
+          mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+
+          const intersects = raycaster.intersectObjects(markers, true);
+          if (intersects.length > 0) {
+            handleMarkerSelection(intersects[0].object);
+          }
+        });
+
+        // Touch tap (mobile)
+        let touchStartTime = 0;
+        container.addEventListener("touchstart", () => {
+          touchStartTime = Date.now();
+        });
+
+        container.addEventListener("touchend", (e) => {
+          const tapDuration = Date.now() - touchStartTime;
+          if (tapDuration > 300 || e.touches.length > 0) return; // ignore long press or multi-touch
+
+          const rect = container.getBoundingClientRect();
+          const touch = e.changedTouches[0];
+          mouse.x = ((touch.clientX - rect.left) / rect.width) * 2 - 1;
+          mouse.y = -((touch.clientY - rect.top) / rect.height) * 2 + 1;
+
+          raycaster.setFromCamera(mouse, camera);
+
+          const intersects = raycaster.intersectObjects(markers, true);
+          if (intersects.length > 0) {
+            handleMarkerSelection(intersects[0].object);
+          }
+        });
+
         // --- Scale markers based on orbit.radius with clamped limits ---
         function updateMarkerScales() {
           const factor = orbit.radius / markerScale.referenceRadius; // >1 when zoomed out; <1 when zoomed in
@@ -655,58 +730,138 @@
         // initial scale
         updateMarkerScales();
 
-        // ----- Mouse interaction -----
+        // ─── Interaction ────────────────────────────────────────────────
         let isDragging = false;
+        let isTouching = false;
         let previousMousePosition = { x: 0, y: 0 };
+        let velocity = { theta: 0, phi: 0 };
+        let lastMoveTime = 0;
         const dragSensitivity = 0.005;
         const dragSensitivityY = 0.005;
+        const damping = 0.95; // inertia decay per frame
 
+        // --- Desktop mouse drag ---
         container.addEventListener("mousedown", (e) => {
           isDragging = true;
-          // Cancel any running animation and unlock marker on drag start
+          velocity.theta = velocity.phi = 0;
           if (orbitAnim) orbitAnim.cancel = true;
           orbit.lockedMarker = null;
           previousMousePosition = { x: e.clientX, y: e.clientY };
+          lastMoveTime = performance.now();
         });
 
         container.addEventListener("mousemove", (e) => {
           if (!isDragging) return;
 
-          const deltaX = e.clientX - previousMousePosition.x;
-          const deltaY = e.clientY - previousMousePosition.y;
+          const now = performance.now();
+          const deltaTime = now - lastMoveTime;
+          lastMoveTime = now;
 
-          orbit.theta -= deltaX * dragSensitivity;
-          orbit.phi -= deltaY * dragSensitivityY;
+          const dx = e.clientX - previousMousePosition.x;
+          const dy = e.clientY - previousMousePosition.y;
+
+          orbit.theta -= dx * dragSensitivity;
+          orbit.phi -= dy * dragSensitivityY;
           orbit.phi = Math.max(orbit.minPhi, Math.min(orbit.maxPhi, orbit.phi));
 
-          updateCameraFromOrbit();
+          // record velocity for inertia
+          velocity.theta = (-dx * dragSensitivity) / Math.max(deltaTime, 16);
+          velocity.phi = (-dy * dragSensitivityY) / Math.max(deltaTime, 16);
 
+          updateCameraFromOrbit();
           previousMousePosition = { x: e.clientX, y: e.clientY };
         });
 
-        container.addEventListener("mouseup", () => {
-          isDragging = false;
-        });
-        container.addEventListener("mouseleave", () => {
-          isDragging = false;
-        });
+        container.addEventListener("mouseup", () => (isDragging = false));
+        container.addEventListener("mouseleave", () => (isDragging = false));
 
-        // Zoom (adjust orbit radius)
+        // --- Scroll wheel zoom (desktop) ---
         container.addEventListener(
           "wheel",
           (e) => {
             e.preventDefault();
             const zoomFactor = 0.0015;
-            const newRadius = orbit.radius + e.deltaY * zoomFactor;
             orbit.radius = Math.max(
               orbit.minRadius,
-              Math.min(orbit.maxRadius, newRadius)
+              Math.min(orbit.maxRadius, orbit.radius + e.deltaY * zoomFactor)
             );
             updateCameraFromOrbit();
-            updateMarkerScales(); // reflect zoom immediately
+            updateMarkerScales();
           },
           { passive: false }
         );
+
+        // --- Touch controls (mobile) ---
+        let touchStartDistance = 0;
+
+        function getTouchDistance(touches) {
+          const dx = touches[0].clientX - touches[1].clientX;
+          const dy = touches[0].clientY - touches[1].clientY;
+          return Math.hypot(dx, dy);
+        }
+
+        container.addEventListener("touchstart", (e) => {
+          if (e.touches.length === 1) {
+            isTouching = true;
+            isDragging = true;
+            velocity.theta = velocity.phi = 0;
+            if (orbitAnim) orbitAnim.cancel = true;
+            orbit.lockedMarker = null;
+            previousMousePosition = {
+              x: e.touches[0].clientX,
+              y: e.touches[0].clientY,
+            };
+            lastMoveTime = performance.now();
+          } else if (e.touches.length === 2) {
+            isTouching = false;
+            touchStartDistance = getTouchDistance(e.touches);
+          }
+        });
+
+        container.addEventListener("touchmove", (e) => {
+          if (e.touches.length === 1 && isDragging && isTouching) {
+            const touch = e.touches[0];
+            const now = performance.now();
+            const deltaTime = now - lastMoveTime;
+            lastMoveTime = now;
+
+            const dx = touch.clientX - previousMousePosition.x;
+            const dy = touch.clientY - previousMousePosition.y;
+
+            orbit.theta -= dx * dragSensitivity;
+            orbit.phi -= dy * dragSensitivityY;
+            orbit.phi = Math.max(
+              orbit.minPhi,
+              Math.min(orbit.maxPhi, orbit.phi)
+            );
+
+            // record velocity for inertia
+            velocity.theta = (-dx * dragSensitivity) / Math.max(deltaTime, 16);
+            velocity.phi = (-dy * dragSensitivityY) / Math.max(deltaTime, 16);
+
+            updateCameraFromOrbit();
+            previousMousePosition = { x: touch.clientX, y: touch.clientY };
+          } else if (e.touches.length === 2) {
+            // Pinch zoom
+            const newDist = getTouchDistance(e.touches);
+            const zoomFactor = 0.005;
+            const delta = (touchStartDistance - newDist) * zoomFactor;
+            orbit.radius = Math.max(
+              orbit.minRadius,
+              Math.min(orbit.maxRadius, orbit.radius + delta)
+            );
+            updateCameraFromOrbit();
+            updateMarkerScales();
+            touchStartDistance = newDist;
+          }
+
+          e.preventDefault();
+        });
+
+        container.addEventListener("touchend", () => {
+          isDragging = false;
+          isTouching = false;
+        });
 
         // Sidebar
         const stickerList = document.getElementById("sticker-list");
@@ -885,6 +1040,23 @@
             const { theta, phi } = vectorToAngles(worldPos);
             orbit.theta = theta;
             orbit.phi = THREE.MathUtils.clamp(phi, orbit.minPhi, orbit.maxPhi);
+          }
+
+          // Apply inertia when not dragging
+          if (!isDragging && !isTouching) {
+            orbit.theta += velocity.theta;
+            orbit.phi += velocity.phi;
+            orbit.phi = Math.max(
+              orbit.minPhi,
+              Math.min(orbit.maxPhi, orbit.phi)
+            );
+
+            velocity.theta *= damping;
+            velocity.phi *= damping;
+
+            // stop tiny floating velocities
+            if (Math.abs(velocity.theta) < 0.00001) velocity.theta = 0;
+            if (Math.abs(velocity.phi) < 0.00001) velocity.phi = 0;
           }
 
           updateCameraFromOrbit();
