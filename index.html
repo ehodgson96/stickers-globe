@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="./data/mapPointer.png" type="image/png" />
+    <link rel="icon" href="./assets/materials/MapPointer.png" type="image/png" />
     <title>Shroom Sticker Globe</title>
     <!-- Pixel-style font -->
     <link
@@ -302,7 +302,7 @@
     <div class="container">
       <div id="globe-container">
         <div class="logo">
-          <img src="./data/ShroomSquad.png" alt="Shroom Squad Logo" />
+          <img src="./assets/materials/ShroomSquad.png" alt="Shroom Squad Logo" />
         </div>
         <div class="controls">
           <p>🖱️ Drag to orbit</p>
@@ -326,7 +326,7 @@
       // Load sticker data from JSON file
       let stickerData = [];
 
-      fetch("./data/stickers.json")
+      fetch("./data/Stickers.json")
         .then((response) => response.json())
         .then((data) => {
           stickerData = data;
@@ -418,8 +418,8 @@
 
         // Textures
         const textureLoader = new THREE.TextureLoader();
-        const dayTexture = textureLoader.load("./data/1_earth_8k.jpg");
-        const nightTexture = textureLoader.load("./data/5_night_8k.jpg");
+        const dayTexture = textureLoader.load("./assets/materials/Earth_8k.jpg");
+        const nightTexture = textureLoader.load("./assets/materials/Night_8k.jpg");
         dayTexture.colorSpace = THREE.SRGBColorSpace;
         nightTexture.colorSpace = THREE.SRGBColorSpace;
 
@@ -471,7 +471,7 @@
 
         // Moon
         const moonGeometry = new THREE.SphereGeometry(0.27, 8, 6);
-        const moonTexture = textureLoader.load("./data/moon.jpg");
+        const moonTexture = textureLoader.load("./assets/materials/Moon.jpg");
         moonTexture.colorSpace = THREE.SRGBColorSpace;
         const moonMaterial = new THREE.MeshStandardMaterial({
           map: moonTexture,
@@ -484,7 +484,7 @@
 
         // Mars
         const marsGeometry = new THREE.SphereGeometry(2, 8, 6);
-        const marsTexture = textureLoader.load("./data/mars.jpg");
+        const marsTexture = textureLoader.load("./assets/materials/Mars.jpg");
         marsTexture.colorSpace = THREE.SRGBColorSpace;
         const marsMaterial = new THREE.MeshStandardMaterial({
           map: marsTexture,
@@ -499,7 +499,7 @@
         const gltfLoader = new THREE.GLTFLoader();
 
         // 🛸 Add UFO
-        addOrbitingModel("./data/ufo.glb", {
+        addOrbitingModel("./assets/UFO.glb", {
           radius: 2,
           speed: 0.0012,
           scale: [0.1, 0.1, 0.1],
@@ -507,7 +507,7 @@
           ySpin: true, // enable Y-axis spin
         });
 
-        addOrbitingModel("./data/cow.glb", {
+        addOrbitingModel("./assets/Cow.glb", {
           radius: 1.1,
           speed: 0.0008,
           scale: [0.01, 0.01, 0.01],
@@ -515,21 +515,21 @@
           zSpin: true, // enable Z-axis spin
           ySpin: true, // enable Y-axis spin
         });
-        addOrbitingModel("./data/rocket.glb", {
+        addOrbitingModel("./assets/Rocket.glb", {
           radius: 1.8,
           speed: -0.0006,
           scale: [0.002, 0.002, 0.002],
           tilt: THREE.MathUtils.degToRad(30), // orbit in opposite tilted plane
           zSpin: true, // enable Z-axis spin
         });
-        addOrbitingModel("./data/Satellite.glb", {
+        addOrbitingModel("./assets/Satellite.glb", {
           radius: 1.4,
           speed: 0.0002,
           scale: [0.003, 0.003, 0.003],
           tilt: THREE.MathUtils.degToRad(5), // orbit in opposite tilted plane
           zSpin: true, // enable Z-axis spin
         });
-        addOrbitingModel("./data/Satellite.glb", {
+        addOrbitingModel("./assets/Satellite.glb", {
           radius: 1.3,
           speed: -0.0005,
           scale: [0.003, 0.003, 0.003],
@@ -537,14 +537,14 @@
           zSpin: true, // enable Z-axis spin
           ySpin: true, // enable Y-axis spin
         });
-        addOrbitingModel("./data/Satellite.glb", {
+        addOrbitingModel("./assets/Satellite.glb", {
           radius: 1.5,
           speed: 0.0003,
           scale: [0.003, 0.003, 0.003],
           tilt: THREE.MathUtils.degToRad(72), // orbit in opposite tilted plane
           zSpin: true, // enable Z-axis spin
         });
-        addOrbitingModel("./data/HubbleTelescope.glb", {
+        addOrbitingModel("./assets/HubbleTelescope.glb", {
           radius: 1.3,
           speed: 0.0003,
           scale: [0.003, 0.003, 0.003],
@@ -617,7 +617,7 @@
         }
 
         const pointerTexture = new THREE.TextureLoader().load(
-          "./data/mapPointer.png"
+          "./assets/materials/MapPointer.png"
         );
 
         stickerData.forEach((sticker, index) => {
@@ -747,16 +747,6 @@
           return d;
         }
 
-        /*************  ✨ Windsurf Command ⭐  *************/
-        /**
-         * EaseInOutQuad - ease in/out quad function for animations
-         * @param {number} t - value between 0 and 1
-         * @returns {number} eased value
-         * @description
-         * This function maps an input value `t` between 0 and 1 to an eased value using a quadratic ease-in/out function.
-         * The function returns 0 at `t=0` and 1 at `t=1`, and the curve is symmetric around `t=0.5`.
-         */
-        /*******  1cd37865-fadf-42e3-aebf-3a26f8d49a49  *******/
         function easeInOutQuad(t) {
           return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
         }
