@@ -42,81 +42,82 @@
         position: relative;
       }
 
-/* ─── SIDEBAR: CRT panel look ───────────────────────────────────────── */
+      /* ─── SIDEBAR: CRT panel look ───────────────────────────────────────── */
       .sidebar {
         width: 340px;
         background: var(--panel);
         position: relative;
         overflow-y: auto;
         padding: 16px 14px 18px;
-        border-left: 2px solid #fff;                 /* outer white frame */
-        box-shadow:
-          inset 0 0 0 2px var(--panel-edge),         /* inner dark frame */
-          inset 0 0 0 6px var(--panel-inner),        /* thick inner bezel */
-          0 0 0 1px #000;                            /* crisp outer edge */
+        border-left: 2px solid #fff; /* outer white frame */
+        box-shadow: inset 0 0 0 2px var(--panel-edge),
+          /* inner dark frame */ inset 0 0 0 6px var(--panel-inner),
+          /* thick inner bezel */ 0 0 0 1px #000; /* crisp outer edge */
         image-rendering: pixelated;
         font-family: "VT323", ui-monospace, monospace;
       }
 
       /* CRT scanlines */
-      .sidebar::after{
-        content:"";
-        position: absolute; inset: 0;
+      .sidebar::after {
+        content: "";
+        position: absolute;
+        inset: 0;
         pointer-events: none;
-        background:
-          repeating-linear-gradient(
-            to bottom,
-            rgba(255,255,255,0.07) 0px,
-            rgba(255,255,255,0.07) 1px,
-            transparent 1px,
-            transparent 3px
-          );
-        opacity: .35;              /* adjust intensity */
+        background: repeating-linear-gradient(
+          to bottom,
+          rgba(255, 255, 255, 0.07) 0px,
+          rgba(255, 255, 255, 0.07) 1px,
+          transparent 1px,
+          transparent 3px
+        );
+        opacity: 0.35; /* adjust intensity */
         mix-blend-mode: overlay;
       }
 
       /* Header block */
-      .header{
-        position: sticky; top: 0; z-index: 2;
+      .header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
         background: linear-gradient(#0f0f1e, #0b0b15);
         border: 2px solid #fff;
-        box-shadow:
-          inset 0 0 0 2px #1d1d30,
-          0 3px 0 0 rgba(255,255,255,0.15);
+        box-shadow: inset 0 0 0 2px #1d1d30, 0 3px 0 0 rgba(255, 255, 255, 0.15);
         padding: 14px 12px 12px;
         text-align: center;
       }
 
-      .header h1{
+      .header h1 {
         font-family: "VT323", ui-monospace, monospace;
         font-size: 28px;
         letter-spacing: 3px;
         color: var(--ink);
-        text-shadow: 0 1px 0 #000, 0 0 6px rgba(255,255,255,0.08);
+        text-shadow: 0 1px 0 #000, 0 0 6px rgba(255, 255, 255, 0.08);
         margin-bottom: 6px;
       }
 
       /* dashed rule like the mock */
-      .header .rule{
-        height: 2px; margin: 6px auto 8px; width: 92%;
-        background:
-          repeating-linear-gradient(
-            to right,
-            #fff 0 6px,
-            transparent 6px 12px
-          );
-        opacity: .85;
+      .header .rule {
+        height: 2px;
+        margin: 6px auto 8px;
+        width: 92%;
+        background: repeating-linear-gradient(
+          to right,
+          #fff 0 6px,
+          transparent 6px 12px
+        );
+        opacity: 0.85;
         filter: drop-shadow(0 1px 0 #000);
       }
 
-      .header p{
-        font-size: 18px; line-height: 1;
+      .header p {
+        font-size: 18px;
+        line-height: 1;
         color: var(--dim-ink);
         letter-spacing: 2px;
         text-shadow: 0 1px 0 #000;
       }
 
-      .sticker-count{
+      .sticker-count {
         margin: 14px 4px 10px;
         padding: 8px 10px;
         font-size: 18px;
@@ -127,40 +128,40 @@
         background: #05050a;
       }
 
-      #sticker-list{ padding: 0 4px 12px; position: relative; z-index: 1; }
+      #sticker-list {
+        padding: 0 4px 12px;
+        position: relative;
+        z-index: 1;
+      }
 
       /* Item layout: title (left) + date (right), coords below */
-      .sticker-item{
+      .sticker-item {
         background: #0a0a12;
         border: 2px solid #2b2b35;
         margin: 10px 4px;
         padding: 8px 10px 7px;
         cursor: pointer;
-        box-shadow:
-          0 2px 0 rgba(0,0,0,0.8),
-          inset 0 0 0 2px #141422;
-        transition: transform .06s linear, box-shadow .06s linear, border-color .06s linear;
+        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.8), inset 0 0 0 2px #141422;
+        transition: transform 0.06s linear, box-shadow 0.06s linear,
+          border-color 0.06s linear;
       }
-      .sticker-item:hover{
+      .sticker-item:hover {
         border-color: #3b3b45;
-        box-shadow:
-          0 3px 0 rgba(0,0,0,0.85),
-          inset 0 0 0 2px #17172a;
+        box-shadow: 0 3px 0 rgba(0, 0, 0, 0.85), inset 0 0 0 2px #17172a;
         transform: translateY(-1px);
       }
 
-      .sticker-item.active{
+      .sticker-item.active {
         background: var(--accent);
         border-color: #ffffff;
         color: #fff;
-        box-shadow:
-          0 3px 0 rgba(0,0,0,0.9),
+        box-shadow: 0 3px 0 rgba(0, 0, 0, 0.9),
           inset 0 0 0 2px var(--accent-dark),
-          inset 0 -8px 0 0 rgba(0,0,0,0.15); /* bottom bevel like mock */
+          inset 0 -8px 0 0 rgba(0, 0, 0, 0.15); /* bottom bevel like mock */
         transform: translateY(0);
       }
 
-      .sticker-row{
+      .sticker-row {
         display: grid;
         grid-template-columns: 1fr auto;
         align-items: baseline;
@@ -168,37 +169,47 @@
         margin-bottom: 2px;
       }
 
-      .sticker-title{
+      .sticker-title {
         font-size: 22px;
         letter-spacing: 2px;
         text-shadow: 0 1px 0 #000;
-        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
-      .sticker-date{
+      .sticker-date {
         font-size: 20px;
         letter-spacing: 2px;
         color: var(--dim-ink);
         text-shadow: 0 1px 0 #000;
       }
 
-      .sticker-item.active .sticker-date{ color:#fff; }
+      .sticker-item.active .sticker-date {
+        color: #fff;
+      }
 
-      .sticker-coords{
+      .sticker-coords {
         font-size: 18px;
         color: var(--green);
         letter-spacing: 2px;
-        text-shadow: 0 0 4px rgba(136,255,136,0.25), 0 1px 0 #000;
+        text-shadow: 0 0 4px rgba(136, 255, 136, 0.25), 0 1px 0 #000;
         opacity: 0.95;
       }
 
       /* Hide the old square photo link button in this look */
-      .sticker-link{ display:none; }
+      .sticker-link {
+        display: none;
+      }
 
       /* Scrollbar – subtle, monochrome */
-      .sidebar::-webkit-scrollbar{ width: 12px; }
-      .sidebar::-webkit-scrollbar-track{ background:#0b0b12; }
-      .sidebar::-webkit-scrollbar-thumb{
+      .sidebar::-webkit-scrollbar {
+        width: 12px;
+      }
+      .sidebar::-webkit-scrollbar-track {
+        background: #0b0b12;
+      }
+      .sidebar::-webkit-scrollbar-thumb {
         background: #dcdcdc;
         border: 3px solid #0b0b12;
       }
@@ -309,6 +320,8 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/GLTFLoader.js"></script>
+
     <script>
       // Load sticker data from JSON file
       let stickerData = [];
@@ -418,7 +431,7 @@
           const ctx = canvas.getContext("2d");
           ctx.fillStyle = "#000000";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          for (let i = 0; i < 1000; i++) {
+          for (let i = 0; i < 2000; i++) {
             const x = Math.random() * canvas.width;
             const y = Math.random() * canvas.height;
             const b = Math.random();
@@ -468,6 +481,111 @@
         const moon = new THREE.Mesh(moonGeometry, moonMaterial);
         moon.position.set(3, 0, 0);
         globe.add(moon);
+
+        // Mars
+        const marsGeometry = new THREE.SphereGeometry(2, 8, 6);
+        const marsTexture = textureLoader.load("./data/mars.jpg");
+        marsTexture.colorSpace = THREE.SRGBColorSpace;
+        const marsMaterial = new THREE.MeshStandardMaterial({
+          map: marsTexture,
+          roughness: 1,
+          metalness: 0,
+        });
+        const mars = new THREE.Mesh(marsGeometry, marsMaterial);
+        mars.position.set(25, 0, 0);
+        scene.add(mars);
+
+        // --- Load custom GLB model to orbit the globe ---
+        const gltfLoader = new THREE.GLTFLoader();
+
+        // 🛸 Add UFO
+        addOrbitingModel("./data/ufo.glb", {
+          radius: 2,
+          speed: 0.0012,
+          scale: [0.1, 0.1, 0.1],
+          tilt: THREE.MathUtils.degToRad(-25), // orbit in opposite tilted plane
+          ySpin: true, // enable Y-axis spin
+        });
+
+        addOrbitingModel("./data/cow.glb", {
+          radius: 1.1,
+          speed: 0.0008,
+          scale: [0.01, 0.01, 0.01],
+          tilt: THREE.MathUtils.degToRad(15), // orbit in opposite tilted plane
+          zSpin: true, // enable Z-axis spin
+          ySpin: true, // enable Y-axis spin
+        });
+        addOrbitingModel("./data/rocket.glb", {
+          radius: 1.8,
+          speed: -0.0006,
+          scale: [0.002, 0.002, 0.002],
+          tilt: THREE.MathUtils.degToRad(30), // orbit in opposite tilted plane
+          zSpin: true, // enable Z-axis spin
+        });
+        addOrbitingModel("./data/Satellite.glb", {
+          radius: 1.4,
+          speed: 0.0002,
+          scale: [0.003, 0.003, 0.003],
+          tilt: THREE.MathUtils.degToRad(5), // orbit in opposite tilted plane
+          zSpin: true, // enable Z-axis spin
+        });
+        addOrbitingModel("./data/Satellite.glb", {
+          radius: 1.3,
+          speed: -0.0005,
+          scale: [0.003, 0.003, 0.003],
+          tilt: THREE.MathUtils.degToRad(28), // orbit in opposite tilted plane
+          zSpin: true, // enable Z-axis spin
+          ySpin: true, // enable Y-axis spin
+        });
+        addOrbitingModel("./data/Satellite.glb", {
+          radius: 1.5,
+          speed: 0.0003,
+          scale: [0.003, 0.003, 0.003],
+          tilt: THREE.MathUtils.degToRad(72), // orbit in opposite tilted plane
+          zSpin: true, // enable Z-axis spin
+        });
+        addOrbitingModel("./data/HubbleTelescope.glb", {
+          radius: 1.3,
+          speed: 0.0003,
+          scale: [0.003, 0.003, 0.003],
+          tilt: THREE.MathUtils.degToRad(-40), // orbit in opposite tilted plane
+          ySpin: true, // enable Y-axis spin
+        });
+        function addOrbitingModel(path, options) {
+          gltfLoader.load(
+            path,
+            (gltf) => {
+              const model = gltf.scene;
+              model.scale.set(...(options.scale || [0.2, 0.2, 0.2]));
+              globe.add(model); // attach to globe so it moves with Earth's rotation
+
+              // Store orbit data for animation
+              model.userData.orbit = {
+                radius: options.radius || 2.5,
+                speed: options.speed || 0.001,
+                angle: Math.random() * Math.PI * 2,
+                tilt: options.tilt || 0, // radians
+                zSpin: options.zSpin || false, // whether to spin around Z axis
+                ySpin: options.ySpin || false, // whether to spin around Z axis
+              };
+
+              // Optional: disable cast/receive shadows
+              model.traverse((n) => {
+                if (n.isMesh) {
+                  n.castShadow = false;
+                  n.receiveShadow = false;
+                }
+              });
+
+              console.log(`${path} loaded`);
+            },
+            (xhr) =>
+              console.log(
+                `${path}: ${((xhr.loaded / xhr.total) * 100).toFixed(1)}%`
+              ),
+            (err) => console.error(`Error loading ${path}:`, err)
+          );
+        }
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
@@ -604,7 +722,9 @@
               <div class="sticker-row">
               <div class="sticker-date">${sticker.date}</div>
               </div>
-            <div class="sticker-coords">${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°</div>
+            <div class="sticker-coords">${sticker.lat.toFixed(
+              4
+            )}°, ${sticker.lng.toFixed(4)}°</div>
           `;
           item.addEventListener("click", (e) => {
             selectSticker(index);
@@ -719,9 +839,13 @@
         }
 
         // Animation loop
-        let moonOrbitAngle = 0;
+        let moonOrbitAngle = 15;
         const moonOrbitRadius = 3;
         const moonOrbitSpeed = 0.001;
+
+        let marsOrbitAngle = 0;
+        const marsOrbitRadius = 25;
+        const marsOrbitSpeed = -0.00001;
 
         function animate() {
           requestAnimationFrame(animate);
@@ -735,6 +859,35 @@
           moon.position.z = Math.sin(moonOrbitAngle) * moonOrbitRadius;
           moon.rotation.y += 0.001;
 
+          // Orbit the mars around Earth
+          marsOrbitAngle += marsOrbitSpeed;
+          mars.position.x = Math.cos(marsOrbitAngle) * marsOrbitRadius;
+          mars.position.z = Math.sin(marsOrbitAngle) * marsOrbitRadius;
+          mars.rotation.y += 0.001;
+
+          globe.traverse((obj) => {
+            if (obj.userData.orbit) {
+              const o = obj.userData.orbit;
+              o.angle += o.speed;
+              const r = o.radius;
+
+              // Apply tilt
+              const tiltMatrix = new THREE.Matrix4().makeRotationX(o.tilt);
+              const pos = new THREE.Vector3(
+                Math.cos(o.angle) * r,
+                0,
+                Math.sin(o.angle) * r
+              ).applyMatrix4(tiltMatrix);
+
+              obj.position.copy(pos);
+              if (o.ySpin) {
+                obj.rotation.y += 0.01; // spin
+              }
+              if (o.zSpin) {
+                obj.rotation.z += 0.01;
+              }
+            }
+          });
           // While locked: keep following the marker as Earth spins
           if (orbit.lockedMarker) {
             const worldPos = new THREE.Vector3();
