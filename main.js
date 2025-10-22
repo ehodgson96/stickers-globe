@@ -124,7 +124,8 @@ function initializeApp() {
 
   loadingManager.onError = function (url) {
     console.error(`Error loading ${url}`);
-    //showLoadingOverlay();
+        showLoadingOverlay();
+
   };
 
   // Textures
