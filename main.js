@@ -13,6 +13,18 @@ fetch("./data/stickers.json")
     initializeApp();
   });
 
+// Show loading overlay
+function showLoadingOverlay() {
+  const overlay = document.getElementById("loading-overlay");
+  if (overlay) overlay.style.display = "flex";
+}
+
+// Hide loading overlay
+function hideLoadingOverlay() {
+  const overlay = document.getElementById("loading-overlay");
+  if (overlay) overlay.style.display = "none";
+}
+
 function initializeApp() {
   // ===== Shaders (world-space lighting so camera doesn't affect it) =====
   const vertexShader = `
@@ -100,8 +112,23 @@ function initializeApp() {
 
   updateCameraFromOrbit();
 
+  const loadingManager = new THREE.LoadingManager();
+
+  loadingManager.onStart = function () {
+    showLoadingOverlay();
+  };
+
+  loadingManager.onLoad = function () {
+    hideLoadingOverlay();
+  };
+
+  loadingManager.onError = function (url) {
+    console.error(`Error loading ${url}`);
+    //showLoadingOverlay();
+  };
+
   // Textures
-  const textureLoader = new THREE.TextureLoader();
+  const textureLoader = new THREE.TextureLoader(loadingManager);
   const dayTexture = textureLoader.load("./assets/materials/Earth_8k.jpg");
   const nightTexture = textureLoader.load("./assets/materials/Night_8k.jpg");
   dayTexture.colorSpace = THREE.SRGBColorSpace;
@@ -180,7 +207,7 @@ function initializeApp() {
   scene.add(mars);
 
   // --- Load custom GLB model to orbit the globe ---
-  const gltfLoader = new THREE.GLTFLoader();
+  const gltfLoader = new THREE.GLTFLoader(loadingManager);
 
   // 🛸 Add UFO
   addOrbitingModel("./assets/UFO.glb", {
@@ -264,9 +291,7 @@ function initializeApp() {
         console.log(`${path} loaded`);
       },
       (xhr) =>
-        console.log(
-          `${path}: ${((xhr.loaded / xhr.total) * 100).toFixed(1)}%`
-        ),
+        console.log(`${path}: ${((xhr.loaded / xhr.total) * 100).toFixed(1)}%`),
       (err) => console.error(`Error loading ${path}:`, err)
     );
   }
@@ -300,9 +325,7 @@ function initializeApp() {
     return new THREE.Vector3(x, y, z).normalize();
   }
 
-  const pointerTexture = new THREE.TextureLoader().load(
-    "./assets/materials/MapPointer.png"
-  );
+  const pointerTexture = textureLoader.load("./assets/materials/MapPointer.png");
 
   stickerData.forEach((sticker, index) => {
     const pos = latLngToVector3(sticker.lat, sticker.lng);
@@ -494,10 +517,7 @@ function initializeApp() {
 
       orbit.theta -= dx * dragSensitivity;
       orbit.phi -= dy * dragSensitivityY;
-      orbit.phi = Math.max(
-        orbit.minPhi,
-        Math.min(orbit.maxPhi, orbit.phi)
-      );
+      orbit.phi = Math.max(orbit.minPhi, Math.min(orbit.maxPhi, orbit.phi));
 
       // record velocity for inertia
       velocity.theta = (-dx * dragSensitivity) / Math.max(deltaTime, 16);
@@ -541,8 +561,7 @@ function initializeApp() {
         <div class="sticker-row">
         <div class="sticker-date">${sticker.date}</div>
         </div>
-      <div class="sticker-coords">${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°</div>
-    `;
+        <div class="sticker-coords">${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°</div>`;
     item.addEventListener("click", (e) => {
       selectSticker(index);
     });
@@ -568,7 +587,12 @@ function initializeApp() {
     return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
   }
 
-  function animateOrbitTo(targetTheta, targetPhi, duration = 700, onDone = () => {}) {
+  function animateOrbitTo(
+    targetTheta,
+    targetPhi,
+    duration = 700,
+    onDone = () => {}
+  ) {
     // Cancel any existing animation
     if (orbitAnim) orbitAnim.cancel = true;
 
@@ -702,13 +726,10 @@ function initializeApp() {
     if (!isDragging && !isTouching) {
       orbit.theta += velocity.theta;
       orbit.phi += velocity.phi;
-      orbit.phi = Math.max(
-        orbit.minPhi,
-        Math.min(orbit.maxPhi, orbit.phi)
-      );
+      orbit.phi = Math.max(orbit.minPhi, Math.min(orbit.maxPhi, orbit.phi));
 
-      velocity.theta *= 0.95;
-      velocity.phi *= 0.95;
+      velocity.theta *= damping;
+      velocity.phi *= damping;
 
       // stop tiny floating velocities
       if (Math.abs(velocity.theta) < 0.00001) velocity.theta = 0;

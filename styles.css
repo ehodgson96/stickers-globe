@@ -19,6 +19,95 @@ body {
   font-family: "VT323", monospace;
 }
 
+#loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(10, 10, 10, 0.98);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.loading-ring {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  margin-bottom: 18px;
+}
+
+.ring-svg {
+  width: 180px;
+  height: 180px;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.ring-bg {
+  fill: none;
+  stroke: #222;
+  stroke-width: 8;
+}
+.ring-progress {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 282.74;
+  stroke-dashoffset: 212.06;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  animation: ring-spin 1.2s linear infinite;
+}
+@keyframes ring-spin {
+  0% { stroke-dashoffset: 282.74; }
+  100% { stroke-dashoffset: 0; }
+}
+.loading-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+.loading-text {
+  color: var(--ink);
+  font-size: 1.5rem;
+  margin-top: 8px;
+  letter-spacing: 2px;
+}
+
+@media (max-width: 600px) {
+  .loading-ring {
+    width: 120px;
+    height: 120px;
+  }
+  .ring-svg {
+    width: 120px;
+    height: 120px;
+  }
+  .loading-logo {
+    width: 70px;
+    height: 70px;
+  }
+  .loading-text {
+    font-size: 1.1rem;
+  }
+}
+
+
 .container {
   display: flex;
   height: 100vh;
