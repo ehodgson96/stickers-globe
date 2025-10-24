@@ -42,6 +42,32 @@
           <p>🖱️ Drag to orbit</p>
           <p>🔍 Scroll to zoom</p>
         </div>
+        <div
+          id="sticker-popout"
+          class="sticker-popout hidden"
+          aria-live="polite"
+        >
+          <button class="popout-close" title="Close">✕</button>
+          <div class="popout-image-wrap">
+            <img id="popout-image" src="" alt="Sticker photo" />
+          </div>
+          <div class="popout-body">
+            <div class="popout-title" id="popout-title"></div>
+            <div class="popout-meta">
+              <span id="popout-date"></span>
+              <span class="dot">•</span>
+              <span id="popout-likes"></span>
+            </div>
+            <div class="popout-coords" id="popout-coords"></div>
+            <a
+              id="popout-link"
+              class="popout-link"
+              target="_blank"
+              rel="noopener"
+              >Open Instagram ↗</a
+            >
+          </div>
+        </div>
       </div>
       <div class="sidebar">
         <div class="header">

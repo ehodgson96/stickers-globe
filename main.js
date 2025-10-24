@@ -67,7 +67,7 @@ function initializeApp() {
   const camera = new THREE.PerspectiveCamera(
     75,
     container.clientWidth / container.clientHeight,
-    0.1,
+    0.01,
     10000
   );
   const renderer = new THREE.WebGLRenderer({
@@ -78,12 +78,28 @@ function initializeApp() {
   renderer.setClearColor(0x0a0a0a);
   container.appendChild(renderer.domElement);
 
+
+  // Popout DOM refs
+  const popout = document.getElementById("sticker-popout");
+  const popoutImage = document.getElementById("popout-image");
+  const popoutTitle = document.getElementById("popout-title");
+  const popoutDate = document.getElementById("popout-date");
+  const popoutLikes = document.getElementById("popout-likes");
+  const popoutCoords = document.getElementById("popout-coords");
+  const popoutLink = document.getElementById("popout-link");
+
+  // Close button
+  popout.querySelector(".popout-close").addEventListener("click", () => {
+    hidePopout();
+    orbit.lockedMarker = null;
+  });
+
   // ---- ORBIT STATE ----
   const orbit = {
     radius: 2.5,
     theta: 0,
     phi: Math.PI / 2,
-    minRadius: 1.5,
+    minRadius: 1.1,
     maxRadius: 5.0,
     minPhi: 0.05,
     maxPhi: Math.PI - 0.05,
@@ -124,7 +140,7 @@ function initializeApp() {
 
   loadingManager.onError = function (url) {
     console.error(`Error loading ${url}`);
-        showLoadingOverlay();
+    showLoadingOverlay();
 
   };
 
@@ -306,9 +322,9 @@ function initializeApp() {
 
   // --- Marker scaling config (relative to zoom) ---
   const markerScale = {
-    base: 0.15, // scale at referenceRadius
-    min: 0.07, // absolute minimum world-scale
-    max: 0.3, // absolute maximum world-scale
+    base: 0.1, // scale at referenceRadius
+    min: 0.08, // absolute minimum world-scale
+    max: 0.1, // absolute maximum world-scale
     referenceRadius: 2.5, // radius at which base applies (matches initial orbit)
   };
 
@@ -336,11 +352,11 @@ function initializeApp() {
 
     const spriteMaterial = new THREE.SpriteMaterial({
       map: pointerTexture,
-      sizeAttenuation: true,
+      sizeAttenuation: false,
     });
     const sprite = new THREE.Sprite(spriteMaterial);
     sprite.scale.set(markerScale.base, markerScale.base, 1); // initial; will be updated per-zoom
-    sprite.position.y = 0.03;
+    sprite.position.y = 0.001;
     sprite.userData = { index, sticker };
 
     spriteContainer.add(sprite);
@@ -436,6 +452,7 @@ function initializeApp() {
     orbit.lockedMarker = null;
     previousMousePosition = { x: e.clientX, y: e.clientY };
     lastMoveTime = performance.now();
+    hidePopout();
   });
 
   container.addEventListener("mousemove", (e) => {
@@ -495,6 +512,7 @@ function initializeApp() {
       velocity.theta = velocity.phi = 0;
       if (orbitAnim) orbitAnim.cancel = true;
       orbit.lockedMarker = null;
+      hidePopout();
       previousMousePosition = {
         x: e.touches[0].clientX,
         y: e.touches[0].clientY,
@@ -661,7 +679,76 @@ function initializeApp() {
     animateOrbitTo(targetTheta, targetPhi, 700, () => {
       if (orbitAnim && orbitAnim.cancel) return;
       orbit.lockedMarker = spriteContainer;
+      showPopout(index);
     });
+  }
+
+  let popoutIndex = null;
+
+  function showPopout(index) {
+    const s = stickerData[index];
+    if (!s) return;
+
+    popoutTitle.textContent = s.title || "Sticker";
+    popoutDate.textContent = s.date || "";
+    popoutLikes.textContent = s.likeCount ? `${s.likeCount} likes` : "";
+    popoutCoords.textContent = `${Number(s.lat).toFixed(4)}°, ${Number(s.lng).toFixed(4)}°`;
+    popoutLink.href = s.link || "#";
+    popoutImage.src = "./assets/stickers/" + s.imageUrl || "";
+    popoutImage.alt = s.title || "Sticker photo";
+
+    popout.classList.remove("hidden");
+    // ensure it's measured before adding the open class
+    requestAnimationFrame(() => popout.classList.add("open"));
+
+    popoutIndex = index;
+    updatePopoutPosition();
+  }
+
+  function hidePopout() {
+    // run the closing animation first
+    popout.classList.remove("open");
+    // after the transition duration, hide completely
+    setTimeout(() => {
+      if (!popout.classList.contains("open")) {
+        popout.classList.add("hidden");
+      }
+    }, 350); // matches CSS transition time
+    popoutIndex = null;
+  }
+
+  // project marker world position to 2D and offset the popout
+  function updatePopoutPosition() {
+    if (popoutIndex == null || !orbit.lockedMarker) return;
+
+    const rect = container.getBoundingClientRect();
+
+    const world = new THREE.Vector3();
+    orbit.lockedMarker.getWorldPosition(world);
+
+    // project to NDC
+    world.project(camera);
+
+    // to pixels within the globe container
+    const x = (world.x * 0.5 + 0.5) * rect.width;
+    const y = (-world.y * 0.5 + 0.5) * rect.height;
+
+    // offset so it doesn't sit in front of the pin
+    const offsetX = 180;   // to the right
+    const offsetY = -200;   // slightly up
+
+    let left = x + offsetX;
+    let top = y + offsetY;
+
+    // clamp inside container
+    const w = popout.offsetWidth || 320;
+    const h = popout.offsetHeight || 220;
+    left = Math.max(10, Math.min(rect.width - w - 10, left));
+    top = Math.max(10, Math.min(rect.height - h - 10, top));
+
+    // apply
+    popout.style.left = `${left}px`;
+    popout.style.top = `${top}px`;
   }
 
   // Animation loop
@@ -721,6 +808,8 @@ function initializeApp() {
       const { theta, phi } = vectorToAngles(worldPos);
       orbit.theta = theta;
       orbit.phi = THREE.MathUtils.clamp(phi, orbit.minPhi, orbit.maxPhi);
+      updatePopoutPosition();
+
     }
 
     // Apply inertia when not dragging
