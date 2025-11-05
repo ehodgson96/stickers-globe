@@ -1,10 +1,13 @@
-// ============================================================================
-// FILE: js/markers.js
-// ============================================================================
-import { CONFIG } from './config.js';
-import { latLngToVector3 } from './utils.js';
+import { CONFIG } from "./config.js";
+import { latLngToVector3 } from "./utils.js";
 
-export function createMarkers(globe, stickerData, textureLoader, camera, container) {
+export function createMarkers(
+  globe,
+  stickerData,
+  textureLoader,
+  camera,
+  container
+) {
   const markerGroup = new THREE.Group();
   const markers = [];
   globe.add(markerGroup);
@@ -16,19 +19,25 @@ export function createMarkers(globe, stickerData, textureLoader, camera, contain
     const spriteContainer = new THREE.Object3D();
     spriteContainer.position.copy(pos);
 
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-      map: pointerTexture,
-      sizeAttenuation: false
-    }));
-    
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: pointerTexture,
+        sizeAttenuation: false,
+      })
+    );
+
     sprite.scale.set(CONFIG.marker.base, CONFIG.marker.base, 1);
-    sprite.position.y = .001;
+    sprite.position.y = 0.001;
     sprite.userData = { index, sticker };
 
     spriteContainer.add(sprite);
     markerGroup.add(spriteContainer);
     markers.push(sprite);
   });
+
+  function isFromPopout(e) {
+    return e.target && e.target.closest && e.target.closest("#sticker-popout");
+  }
 
   // Raycasting for interaction
   const raycaster = new THREE.Raycaster();
@@ -44,15 +53,17 @@ export function createMarkers(globe, stickerData, textureLoader, camera, contain
     return intersects.length > 0 ? intersects[0].object.userData.index : null;
   }
 
-  container.addEventListener('click', (e) => {
-    if (isDragging) return;
+  container.addEventListener("click", (e) => {
+    if (isDragging || isFromPopout(e)) return;
     const rect = container.getBoundingClientRect();
     const index = handleSelection(e.clientX, e.clientY, rect);
     if (index !== null) onMarkerClick(index);
   });
 
-  container.addEventListener('touchstart', () => touchStartTime = Date.now());
-  container.addEventListener('touchend', (e) => {
+  container.addEventListener("touchstart", () => (touchStartTime = Date.now()));
+
+  container.addEventListener("touchend", (e) => {
+    if (isFromPopout(e)) return; // <— new
     if (Date.now() - touchStartTime > 300 || e.touches.length > 0) return;
     const rect = container.getBoundingClientRect();
     const touch = e.changedTouches[0];
@@ -69,7 +80,7 @@ export function createMarkers(globe, stickerData, textureLoader, camera, contain
       CONFIG.marker.min,
       CONFIG.marker.max
     );
-    markers.forEach(m => m.scale.set(s, s, 1));
+    markers.forEach((m) => m.scale.set(s, s, 1));
   }
 
   function highlightMarker(index) {
@@ -83,8 +94,7 @@ export function createMarkers(globe, stickerData, textureLoader, camera, contain
     markerGroup,
     updateScales,
     highlightMarker,
-    setDragging: (val) => isDragging = val,
-    onSelect: (callback) => onMarkerClick = callback
+    setDragging: (val) => (isDragging = val),
+    onSelect: (callback) => (onMarkerClick = callback),
   };
 }
-

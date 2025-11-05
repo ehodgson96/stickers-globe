@@ -1,12 +1,12 @@
-import { CONFIG } from './config.js';
-import { createScene } from './scene.js';
-import { createGlobe } from './globe.js';
-import { createMarkers } from './markers.js';
-import { createUI } from './ui.js';
-import { vectorToAngles, animateOrbit } from './utils.js';
+import { CONFIG } from "./config.js";
+import { createScene } from "./scene.js";
+import { createGlobe } from "./globe.js";
+import { createMarkers } from "./markers.js";
+import { createUI } from "./ui.js";
+import { vectorToAngles, animateOrbit } from "./utils.js";
 
 async function init() {
-  const container = document.getElementById('globe-container');
+  const container = document.getElementById("globe-container");
 
   // Load sticker data
   let stickerData = [];
@@ -14,7 +14,7 @@ async function init() {
     const response = await fetch(CONFIG.paths.stickersJson);
     stickerData = await response.json();
   } catch (error) {
-    console.error('Error loading stickers:', error);
+    console.error("Error loading stickers:", error);
   }
 
   // Setup loading manager
@@ -24,7 +24,12 @@ async function init() {
 
   // Create UI early to control loading overlay
   const sceneSetup = createScene(container);
-  const ui = createUI(stickerData, container, sceneSetup.camera, sceneSetup.orbit);
+  const ui = createUI(
+    stickerData,
+    container,
+    sceneSetup.camera,
+    sceneSetup.orbit
+  );
 
   loadingManager.onStart = () => ui.loading.show();
   loadingManager.onLoad = () => ui.loading.hide();
@@ -124,8 +129,10 @@ async function init() {
       sceneSetup.velocity.theta *= CONFIG.orbit.damping;
       sceneSetup.velocity.phi *= CONFIG.orbit.damping;
 
-      if (Math.abs(sceneSetup.velocity.theta) < 0.00001) sceneSetup.velocity.theta = 0;
-      if (Math.abs(sceneSetup.velocity.phi) < 0.00001) sceneSetup.velocity.phi = 0;
+      if (Math.abs(sceneSetup.velocity.theta) < 0.00001)
+        sceneSetup.velocity.theta = 0;
+      if (Math.abs(sceneSetup.velocity.phi) < 0.00001)
+        sceneSetup.velocity.phi = 0;
     }
 
     sceneSetup.updateCamera();
@@ -159,14 +166,19 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
     markerSetup.setDragging(false);
   }
 
+  function isFromPopout(e) {
+    return e.target && e.target.closest && e.target.closest("#sticker-popout");
+  }
+
   // Mouse
-  container.addEventListener('mousedown', (e) => {
+  container.addEventListener("mousedown", (e) => {
+    if (isFromPopout(e)) return; // <— prevent drag start from popout
     onDragStart();
     previousPos = { x: e.clientX, y: e.clientY };
     lastMoveTime = performance.now();
   });
 
-  container.addEventListener('mousemove', (e) => {
+  container.addEventListener("mousemove", (e) => {
     if (!isDragging) return;
 
     const now = performance.now();
@@ -180,15 +192,17 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
     orbit.phi -= dy * CONFIG.orbit.dragSensitivity;
     orbit.phi = Math.max(orbit.minPhi, Math.min(orbit.maxPhi, orbit.phi));
 
-    velocity.theta = (-dx * CONFIG.orbit.dragSensitivity) / Math.max(deltaTime, 16);
-    velocity.phi = (-dy * CONFIG.orbit.dragSensitivity) / Math.max(deltaTime, 16);
+    velocity.theta =
+      (-dx * CONFIG.orbit.dragSensitivity) / Math.max(deltaTime, 16);
+    velocity.phi =
+      (-dy * CONFIG.orbit.dragSensitivity) / Math.max(deltaTime, 16);
 
     updateCamera();
     previousPos = { x: e.clientX, y: e.clientY };
   });
 
-  container.addEventListener('mouseup', onDragEnd);
-  container.addEventListener('mouseleave', onDragEnd);
+  container.addEventListener("mouseup", onDragEnd);
+  container.addEventListener("mouseleave", onDragEnd);
 
   // Touch
   function getTouchDistance(touches) {
@@ -197,7 +211,8 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
     return Math.hypot(dx, dy);
   }
 
-  container.addEventListener('touchstart', (e) => {
+  container.addEventListener("touchstart", (e) => {
+    if (isFromPopout(e)) return; // <— don’t hide popout on link tap
     if (e.touches.length === 1) {
       onDragStart();
       previousPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -207,7 +222,8 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
     }
   });
 
-  container.addEventListener('touchmove', (e) => {
+  container.addEventListener("touchmove", (e) => {
+    if (isFromPopout(e)) return;
     if (e.touches.length === 1 && isDragging) {
       const touch = e.touches[0];
       const now = performance.now();
@@ -217,19 +233,26 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
       const dx = touch.clientX - previousPos.x;
       const dy = touch.clientY - previousPos.y;
 
-      orbit.theta -= dx * CONFIG.orbit.dragSensitivity;
-      orbit.phi -= dy * CONFIG.orbit.dragSensitivity;
+      const scale = orbit.radius / CONFIG.marker.referenceRadius;
+      const s = CONFIG.orbit.dragSensitivity * scale; 
+
+      orbit.theta -= dx * s;
+      orbit.phi -= dy * s;
       orbit.phi = Math.max(orbit.minPhi, Math.min(orbit.maxPhi, orbit.phi));
 
-      velocity.theta = (-dx * CONFIG.orbit.dragSensitivity) / Math.max(deltaTime, 16);
-      velocity.phi = (-dy * CONFIG.orbit.dragSensitivity) / Math.max(deltaTime, 16);
+      // Keep inertia in the same units:
+      velocity.theta = (-dx * s) / Math.max(deltaTime, 16);
+      velocity.phi = (-dy * s) / Math.max(deltaTime, 16);
 
       updateCamera();
       previousPos = { x: touch.clientX, y: touch.clientY };
     } else if (e.touches.length === 2) {
       const newDist = getTouchDistance(e.touches);
       const delta = (touchStartDistance - newDist) * 0.005;
-      orbit.radius = Math.max(orbit.minRadius, Math.min(orbit.maxRadius, orbit.radius + delta));
+      orbit.radius = Math.max(
+        orbit.minRadius,
+        Math.min(orbit.maxRadius, orbit.radius + delta)
+      );
       updateCamera();
       markerSetup.updateScales(orbit.radius);
       touchStartDistance = newDist;
@@ -237,18 +260,23 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
     e.preventDefault();
   });
 
-  container.addEventListener('touchend', onDragEnd);
+  container.addEventListener("touchend", onDragEnd);
 
   // Wheel zoom
-  container.addEventListener('wheel', (e) => {
-    e.preventDefault();
-    orbit.radius = Math.max(
-      orbit.minRadius,
-      Math.min(orbit.maxRadius, orbit.radius + e.deltaY * 0.0015)
-    );
-    updateCamera();
-    markerSetup.updateScales(orbit.radius);
-  }, { passive: false });
+  container.addEventListener(
+    "wheel",
+    (e) => {
+      if (isFromPopout(e)) return;
+      e.preventDefault();
+      orbit.radius = Math.max(
+        orbit.minRadius,
+        Math.min(orbit.maxRadius, orbit.radius + e.deltaY * 0.0015)
+      );
+      updateCamera();
+      markerSetup.updateScales(orbit.radius);
+    },
+    { passive: false }
+  );
 }
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener("DOMContentLoaded", init);

@@ -1,6 +1,3 @@
-// ============================================================================
-// FILE: js/globe.js
-// ============================================================================
 import { CONFIG } from './config.js';
 
 export function createGlobe(scene, textureLoader, gltfLoader) {
