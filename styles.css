@@ -300,13 +300,15 @@ body {
   font-size: 18px;
   letter-spacing: 2px;
   color: #f2f2f2;
-  background: #0e0e15;
+  background: #0e0e157b;
   border: 2px solid #f2f2f2;
   box-shadow: inset 0 0 0 2px #1d1d30, 0 0 12px rgba(255, 255, 255, 0.1),
     2px 2px 0 rgba(0, 0, 0, 0.8);
   image-rendering: pixelated;
   position: absolute;
   overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease;
 }
 
 /* Subtle scanline overlay inside controls */
@@ -316,8 +318,8 @@ body {
   inset: 0;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.07) 0px,
-    rgba(255, 255, 255, 0.07) 1px,
+    rgba(255, 255, 255, 0.1) 0px,
+    rgba(255, 255, 255, 0.1) 1px,
     transparent 1px,
     transparent 3px
   );
@@ -332,19 +334,35 @@ body {
   text-shadow: 0 1px 0 #000;
 }
 
-/* add a small heading bar to match sidebar style */
-.controls::before {
-  content: "+ CONTROLS +";
-  position: absolute;
-  top: -16px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #0e0e15;
-  padding: 0 6px;
-  font-size: 16px;
-  letter-spacing: 2px;
-  color: #f2f2f2;
+.controls + .controls-toggle {
+  display: none;
 }
+
+.controls.minimised {
+  display: none;
+}
+
+.controls.minimised + .controls-toggle {
+  display: inline-flex;
+}
+
+.controls-toggle {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 101;
+  font-family: "VT323", monospace;
+  letter-spacing: 2px;
+  font-size: 18px;
+  color: #f2f2f2;
+  background: #0e0e157e;
+  border: 2px dashed #f2f2f2;
+  box-shadow: inset 0 0 0 2px #1d1d30, 2px 2px 0 rgba(0,0,0,0.8);
+  padding: 6px 10px;
+  cursor: pointer;
+  image-rendering: pixelated;
+}
+
 .logo {
   position: absolute;
   top: 20px;

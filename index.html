@@ -9,7 +9,6 @@
       type="image/png"
     />
     <title>Shroom Sticker Globe</title>
-    <!-- Pixel-style font -->
     <link
       href="https://fonts.googleapis.com/css2?family=VT323&display=swap"
       rel="stylesheet"
@@ -38,10 +37,14 @@
             alt="Shroom Squad Logo"
           />
         </div>
-        <div class="controls">
+        <div class="controls minimised">
           <p>🖱️ Drag to orbit</p>
           <p>🔍 Scroll to zoom</p>
+          <p>📍 Click a marker <br /> to open details</p>
         </div>
+        <button class="controls-toggle" id="controls-toggle" type="button" aria-controls="controls" aria-expanded="false">
+          + CONTROLS +
+        </button>
         <div
           id="sticker-popout"
           class="sticker-popout hidden"
@@ -72,7 +75,7 @@
       <div class="sidebar">
         <div class="header">
           <h1>+ STICKER SPOTS +</h1>
-          <p>Your global sticker collection</p>
+          <p>Our global sticker collection</p>
         </div>
         <div class="sticker-count" id="sticker-count"></div>
         <div id="sticker-list"></div>

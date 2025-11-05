@@ -166,13 +166,15 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
     markerSetup.setDragging(false);
   }
 
-  function isFromPopout(e) {
-    return e.target && e.target.closest && e.target.closest("#sticker-popout");
+
+  function isFrom(el, selector) {
+    return el && el.closest && el.closest(selector);
   }
 
   // Mouse
   container.addEventListener("mousedown", (e) => {
-    if (isFromPopout(e)) return; // <— prevent drag start from popout
+    if (isFrom(e.target, '#sticker-popout')) return; 
+    if (isFrom(e.target, '.controls')) return; 
     onDragStart();
     previousPos = { x: e.clientX, y: e.clientY };
     lastMoveTime = performance.now();
@@ -187,15 +189,15 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
 
     const dx = e.clientX - previousPos.x;
     const dy = e.clientY - previousPos.y;
+    const scale = (orbit.radius / CONFIG.marker.referenceRadius) ** 2;
+    const s = CONFIG.orbit.dragSensitivity * scale;
 
-    orbit.theta -= dx * CONFIG.orbit.dragSensitivity;
-    orbit.phi -= dy * CONFIG.orbit.dragSensitivity;
+    orbit.theta -= dx * s;
+    orbit.phi -= dy * s;
     orbit.phi = Math.max(orbit.minPhi, Math.min(orbit.maxPhi, orbit.phi));
 
-    velocity.theta =
-      (-dx * CONFIG.orbit.dragSensitivity) / Math.max(deltaTime, 16);
-    velocity.phi =
-      (-dy * CONFIG.orbit.dragSensitivity) / Math.max(deltaTime, 16);
+    velocity.theta = (-dx * s) / Math.max(deltaTime, 16);
+    velocity.phi = (-dy * s) / Math.max(deltaTime, 16);
 
     updateCamera();
     previousPos = { x: e.clientX, y: e.clientY };
@@ -212,7 +214,8 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   }
 
   container.addEventListener("touchstart", (e) => {
-    if (isFromPopout(e)) return; // <— don’t hide popout on link tap
+    if (isFrom(e.target, '#sticker-popout')) return; 
+    if (isFrom(e.target, '.controls')) return; 
     if (e.touches.length === 1) {
       onDragStart();
       previousPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -223,7 +226,8 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   });
 
   container.addEventListener("touchmove", (e) => {
-    if (isFromPopout(e)) return;
+    if (isFrom(e.target, '#sticker-popout')) return; 
+    if (isFrom(e.target, '.controls')) return; 
     if (e.touches.length === 1 && isDragging) {
       const touch = e.touches[0];
       const now = performance.now();
@@ -233,8 +237,8 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
       const dx = touch.clientX - previousPos.x;
       const dy = touch.clientY - previousPos.y;
 
-      const scale = orbit.radius / CONFIG.marker.referenceRadius;
-      const s = CONFIG.orbit.dragSensitivity * scale; 
+      const scale = (orbit.radius / CONFIG.marker.referenceRadius) ** 2;
+      const s = CONFIG.orbit.dragSensitivity * scale;
 
       orbit.theta -= dx * s;
       orbit.phi -= dy * s;
@@ -263,10 +267,9 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   container.addEventListener("touchend", onDragEnd);
 
   // Wheel zoom
-  container.addEventListener(
-    "wheel",
-    (e) => {
-      if (isFromPopout(e)) return;
+  container.addEventListener("wheel",(e) => {
+    if (isFrom(e.target, '#sticker-popout')) return; 
+      if (isFrom(e.target, '.controls')) return; 
       e.preventDefault();
       orbit.radius = Math.max(
         orbit.minRadius,

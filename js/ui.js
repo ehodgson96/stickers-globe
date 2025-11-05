@@ -111,8 +111,26 @@ export function createUI(stickerData, container, camera, orbit) {
   // Mobile UI hint
   if ('ontouchstart' in window) {
     const controls = document.querySelector('.controls');
-    controls.innerHTML = `<p>👆 Drag to orbit</p><p>🤏 Pinch to zoom</p>`;
+    controls.innerHTML = `<p>👆 Drag to orbit</p><p>🤏 Pinch to zoom</p><p>📍 Tap a marker to open</p>`;
   }
+
+  const controls = document.getElementById('controls') || document.querySelector('.controls');
+  const toggleBtn = document.getElementById('controls-toggle');
+
+  if (!controls || !toggleBtn) return;
+
+  controls.addEventListener('click', (e) => {
+    if (e.target.closest('button, a, input, select, textarea, label')) return;
+    e.stopPropagation();
+    controls.classList.add('minimised');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+  });
+
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    controls.classList.remove('minimised');
+    toggleBtn.setAttribute('aria-expanded', 'true');
+  });
 
   return { loading, sidebar, popout: popoutUI };
 }
