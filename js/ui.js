@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export function createUI(stickerData, container, camera, orbit) {
   // Loading overlay
   const loadingOverlay = document.getElementById('loading-overlay');

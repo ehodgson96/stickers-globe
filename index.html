@@ -1,26 +1,46 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="Shroom Sticker Globe">
-    <meta property="og:url" content="https://ehodgson96.github.io/stickers-globe/">
-    <meta property="og:title" content="Shroom Sticker Globe">
-    <meta property="og:description" content="Spin the globe and discover sticker drops around the world.">
-    <meta property="og:image" content="https://ehodgson96.github.io/stickers-globe/assets/materials/ShroomSquad.png">
-    <meta property="og:image:width" content="630">
-    <meta property="og:image:height" content="630">
-    <meta name="theme-color" content="#0a0a0a">
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Shroom Sticker Globe" />
+    <meta
+      property="og:url"
+      content="https://ehodgson96.github.io/stickers-globe/"
+    />
+    <meta property="og:title" content="Shroom Sticker Globe" />
+    <meta
+      property="og:description"
+      content="Spin the globe and discover sticker drops around the world."
+    />
+    <meta
+      property="og:image"
+      content="https://ehodgson96.github.io/stickers-globe/assets/materials/ShroomSquad.png"
+    />
+    <meta property="og:image:width" content="630" />
+    <meta property="og:image:height" content="630" />
+    <meta name="theme-color" content="#0a0a0a" />
     <link
       rel="icon"
       href="./assets/materials/MapPointer.png"
       type="image/png"
     />
     <title>Shroom Sticker Globe</title>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=VT323&display=swap"
+      rel="stylesheet"
+    />
 
     <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="loading-overlay">
@@ -30,7 +50,11 @@
             <circle class="ring-bg" cx="50" cy="50" r="45" />
             <circle class="ring-progress" cx="50" cy="50" r="45" />
           </svg>
-          <img src="./assets/materials/ShroomSquad.png" alt="Shroom Squad Logo" class="loading-logo" />
+          <img
+            src="./assets/materials/ShroomSquad.png"
+            alt="Shroom Squad Logo"
+            class="loading-logo"
+          />
         </div>
         <div class="loading-text">Loading...</div>
       </div>
@@ -46,9 +70,18 @@
         <div class="controls minimised">
           <p>🖱️ Drag to orbit</p>
           <p>🔍 Scroll to zoom</p>
-          <p>📍 Click a marker <br /> to open details</p>
+          <p>
+            📍 Click a marker <br />
+            to open details
+          </p>
         </div>
-        <button class="controls-toggle" id="controls-toggle" type="button" aria-controls="controls" aria-expanded="false">
+        <button
+          class="controls-toggle"
+          id="controls-toggle"
+          type="button"
+          aria-controls="controls"
+          aria-expanded="false"
+        >
           + CONTROLS +
         </button>
         <div
@@ -88,8 +121,6 @@
       </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/GLTFLoader.js"></script>
     <script type="module" src="js/main.js"></script>
   </body>
 </html>

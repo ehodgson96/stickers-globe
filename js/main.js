@@ -4,6 +4,9 @@ import { createGlobe } from "./globe.js";
 import { createMarkers } from "./markers.js";
 import { createUI } from "./ui.js";
 import { vectorToAngles, animateOrbit } from "./utils.js";
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
 
 async function init() {
   const container = document.getElementById("globe-container");
@@ -20,7 +23,7 @@ async function init() {
   // Setup loading manager
   const loadingManager = new THREE.LoadingManager();
   const textureLoader = new THREE.TextureLoader(loadingManager);
-  const gltfLoader = new THREE.GLTFLoader(loadingManager);
+  const gltfLoader = new GLTFLoader(loadingManager);
 
   // Create UI early to control loading overlay
   const sceneSetup = createScene(container);

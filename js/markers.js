@@ -1,5 +1,6 @@
 import { CONFIG } from "./config.js";
 import { latLngToVector3 } from "./utils.js";
+import * as THREE from 'three';
 
 export function createMarkers(
   globe,

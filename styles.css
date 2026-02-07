@@ -57,7 +57,9 @@ body {
   fill: none;
   stroke: #222;
   stroke-width: 6;
+  animation: ring-bg-swap 2.4s steps(1, end) infinite;
 }
+
 .ring-progress {
   fill: none;
   stroke: var(--accent);
@@ -67,12 +69,28 @@ body {
   stroke-dashoffset: 212.06;
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
-  animation: ring-spin 1.2s linear infinite;
+  animation: ring-spin 1.2s linear infinite, ring-progress-swap 2.4s steps(1, end) infinite;
 }
+
 @keyframes ring-spin {
   0% { stroke-dashoffset: 282.74; }
   100% { stroke-dashoffset: 0; }
 }
+
+@keyframes ring-bg-swap {
+  0%   { stroke: #222; }
+  50%  { stroke: #222; }
+  50.001% { stroke: var(--accent); }
+  100% { stroke: var(--accent); }
+}
+
+@keyframes ring-progress-swap {
+  0%   { stroke: var(--accent); }
+  50%  { stroke: var(--accent); }
+  50.001% { stroke: #222; }
+  100% { stroke: #222; }
+}
+
 .loading-logo {
   position: absolute;
   top: 50%;

@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import * as THREE from 'three';
 
 export function createGlobe(scene, textureLoader, gltfLoader) {
   // Shaders
@@ -25,8 +26,13 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
       float sunIntensity = dot(vNormalWorld, normalize(uSunDirectionWorld));
       float mixFactor = smoothstep(-0.1, 0.1, sunIntensity);
       vec3 color = mix(nightColor, dayColor, mixFactor);
-      float spec = pow(max(dot(vNormalWorld, normalize(uSunDirectionWorld)), 0.0), 16.0) * 0.4;
-      color += vec3(spec);
+
+        float nightAmount = 1.0 - clamp(sunIntensity * 5.0 + 0.5, 0.0, 1.0);
+      // Extract bright parts (city lights) from night texture
+      float cityMask = smoothstep(0.6, 1.0, max(max(nightColor.r, nightColor.g), nightColor.b));
+      vec3 cityLights = nightColor * cityMask * nightAmount * 2.0; // 2.0 = boost intensity
+
+      color += cityLights;
       gl_FragColor = vec4(color, 1.0);
     }
   `;

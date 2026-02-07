@@ -1,4 +1,14 @@
 import { CONFIG } from './config.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GlitchPass } from 'three/addons/postprocessing/GlitchPass.js';
+import { BloomPass } from 'three/addons/postprocessing/BloomPass.js';
+import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
+//import { PixelationPass } from 'three/addons/tsl/display/PixelationPassNode.js';
+import { DotScreenPass } from 'three/addons/postprocessing/DotScreenPass.js';
+import { AfterimagePass } from 'three/addons/postprocessing/AfterimagePass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import * as THREE from 'three';
 
 export function createScene(container) {
   const scene = new THREE.Scene();
@@ -14,6 +24,25 @@ export function createScene(container) {
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setClearColor(0x0a0a0a);
   container.appendChild(renderer.domElement);
+
+  const composer = new EffectComposer( renderer );
+  const renderPass = new RenderPass( scene, camera );
+  composer.addPass( renderPass );
+  const glitchPass = new GlitchPass(100);
+  //composer.addPass( glitchPass );
+  const effectBloom = new BloomPass( 10 );
+  //composer.addPass( effectBloom );
+  const resolution = new THREE.Vector2( window.innerWidth, window.innerHeight );
+  const outlinePass = new OutlinePass( resolution, scene, camera );
+  //composer.addPass( outlinePass );
+  const dotScreenPass = new DotScreenPass( new THREE.Vector2( 0, 0 ), 0.5, 0.9 );
+  //composer.addPass( dotScreenPass );
+  //const pixelPass = new PixelationPass( scene, camera );
+  //composer.addPass( pixelPass );
+  const afterimagePass = new AfterimagePass( 0.2 );
+  composer.addPass( afterimagePass );
+  const bloomPass = new UnrealBloomPass( resolution, 1.5, 0.4, 1 );
+  composer.addPass( bloomPass );
 
   // Orbit state
   const orbit = {
@@ -90,6 +119,6 @@ export function createScene(container) {
     orbit,
     velocity,
     updateCamera,
-    render: () => renderer.render(scene, camera)
+    render: () => composer.render(scene, camera)
   };
 }
