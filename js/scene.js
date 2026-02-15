@@ -56,6 +56,18 @@ export function createScene(container) {
       enabled: false,
       controls: [
         {
+          id: 'auto',
+          label: 'Auto',
+          type: 'boolean',
+          get: () => autoGlitchEnabled,
+          set: (value) => {
+            autoGlitchEnabled = Boolean(value);
+            if (!value) {
+              glitchPass.enabled = false;
+            }
+          }
+        },
+        {
           id: 'wild',
           label: 'Wild',
           type: 'boolean',
@@ -268,6 +280,10 @@ export function createScene(container) {
   const effectLookup = new Map(effects.map((effect) => [effect.id, effect]));
   let frameCount = 0;
 
+  // Auto-glitch timing
+  let startTime = Date.now();
+  let autoGlitchEnabled = true; // Set to false to disable auto-glitch
+
   function rebuildOutlineSelection(force = false) {
     if (!force) {
       frameCount += 1;
@@ -389,7 +405,14 @@ export function createScene(container) {
       const control = effect.controls.find((candidate) => candidate.id === controlId);
       if (!control) return;
       control.set(value);
-    }
+    },
+    setAutoGlitch: (enabled) => {
+      autoGlitchEnabled = Boolean(enabled);
+      if (!enabled) {
+        glitchPass.enabled = false;
+      }
+    },
+    getAutoGlitch: () => autoGlitchEnabled
   };
 
   return {
@@ -406,6 +429,17 @@ export function createScene(container) {
       rebuildOutlineSelection(true);
     },
     render: () => {
+      // Auto-glitch logic: enable for 1 second every 10 seconds
+      if (autoGlitchEnabled) {
+        const elapsed = (Date.now() - startTime) / 1000; // seconds
+        const cycleTime = elapsed % 10; // position in 10-second cycle
+        const shouldGlitch = cycleTime < 1; // glitch for first second
+        
+        if (glitchPass.enabled !== shouldGlitch) {
+          glitchPass.enabled = shouldGlitch;
+        }
+      }
+      
       outlinePass.visibleEdgeColor.set(0xFFFFFF);
       outlinePass.hiddenEdgeColor.set(0x000000);
       outlinePass.edgeGlow = 0;
