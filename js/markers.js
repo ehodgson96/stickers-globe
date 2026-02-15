@@ -23,7 +23,7 @@ export function createMarkers(
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: pointerTexture,
-        sizeAttenuation: false,
+        sizeAttenuation: false
       })
     );
 
@@ -37,7 +37,11 @@ export function createMarkers(
   });
 
   function isFromPopout(e) {
-    return e.target && e.target.closest && e.target.closest("#sticker-popout");
+    return e.target && e.target.closest && e.target.closest('#sticker-popout');
+  }
+
+  function isFromSettings(e) {
+    return e.target && e.target.closest && e.target.closest('#settings-panel, #settings-cog');
   }
 
   // Raycasting for interaction
@@ -54,17 +58,19 @@ export function createMarkers(
     return intersects.length > 0 ? intersects[0].object.userData.index : null;
   }
 
-  container.addEventListener("click", (e) => {
-    if (isDragging || isFromPopout(e)) return;
+  container.addEventListener('click', (e) => {
+    if (isDragging || isFromPopout(e) || isFromSettings(e)) return;
     const rect = container.getBoundingClientRect();
     const index = handleSelection(e.clientX, e.clientY, rect);
     if (index !== null) onMarkerClick(index);
   });
 
-  container.addEventListener("touchstart", () => (touchStartTime = Date.now()));
+  container.addEventListener('touchstart', () => {
+    touchStartTime = Date.now();
+  });
 
-  container.addEventListener("touchend", (e) => {
-    if (isFromPopout(e)) return; // <— new
+  container.addEventListener('touchend', (e) => {
+    if (isFromPopout(e) || isFromSettings(e)) return;
     if (Date.now() - touchStartTime > 300 || e.touches.length > 0) return;
     const rect = container.getBoundingClientRect();
     const touch = e.changedTouches[0];
@@ -96,6 +102,6 @@ export function createMarkers(
     updateScales,
     highlightMarker,
     setDragging: (val) => (isDragging = val),
-    onSelect: (callback) => (onMarkerClick = callback),
+    onSelect: (callback) => (onMarkerClick = callback)
   };
 }

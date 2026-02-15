@@ -67,7 +67,7 @@
             alt="Shroom Squad Logo"
           />
         </div>
-        <div class="controls minimised">
+        <div class="controls minimised" id="controls">
           <p>🖱️ Drag to orbit</p>
           <p>🔍 Scroll to zoom</p>
           <p>
@@ -84,6 +84,39 @@
         >
           + CONTROLS +
         </button>
+        <button
+          id="settings-cog"
+          class="settings-cog"
+          type="button"
+          aria-controls="settings-panel"
+          aria-expanded="false"
+          aria-label="Open secret settings"
+          title="Secret Settings"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M10.4 2.4h3.2l.6 2.2c.6.2 1.1.4 1.6.7l2-1 2.2 2.2-1 2c.3.5.5 1 .7 1.6l2.3.6v3.2l-2.3.6c-.2.6-.4 1.1-.7 1.6l1 2-2.2 2.2-2-1c-.5.3-1 .5-1.6.7l-.6 2.3h-3.2l-.6-2.3c-.6-.2-1.1-.4-1.6-.7l-2 1L3.2 19.6l1-2c-.3-.5-.5-1-.7-1.6l-2.3-.6v-3.2l2.3-.6c.2-.6.4-1.1.7-1.6l-1-2 2.2-2.2 2 1c.5-.3 1-.5 1.6-.7l.6-2.2zM12 9a3 3 0 100 6 3 3 0 000-6z"
+            />
+          </svg>
+        </button>
+        <aside
+          id="settings-panel"
+          class="settings-panel"
+          aria-label="Secret settings"
+          aria-hidden="true"
+        >
+          <div class="settings-header">
+            <span>SYS MENU</span>
+            <button id="settings-close" type="button" aria-label="Close settings">
+              X
+            </button>
+          </div>
+          <div class="settings-fps">
+            <span>FPS</span>
+            <strong id="fps-counter">0</strong>
+          </div>
+          <div id="settings-effects" class="settings-effects"></div>
+        </aside>
         <div
           id="sticker-popout"
           class="sticker-popout hidden"

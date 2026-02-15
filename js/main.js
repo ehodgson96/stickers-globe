@@ -31,7 +31,8 @@ async function init() {
     stickerData,
     container,
     sceneSetup.camera,
-    sceneSetup.orbit
+    sceneSetup.orbit,
+    sceneSetup
   );
 
   loadingManager.onStart = () => ui.loading.show();
@@ -40,6 +41,7 @@ async function init() {
 
   // Create globe and markers
   const globeSetup = createGlobe(sceneSetup.scene, textureLoader, gltfLoader);
+  sceneSetup.setOutlineTargets([globeSetup.globe, globeSetup.celestial.mars.mesh]);
   const markerSetup = createMarkers(
     globeSetup.globe,
     stickerData,
@@ -47,8 +49,6 @@ async function init() {
     sceneSetup.camera,
     container
   );
-
-  // Input controls
   setupControls(container, sceneSetup, markerSetup, ui);
 
   // Selection logic
@@ -98,8 +98,23 @@ async function init() {
   ui.sidebar.onClick((index) => selectSticker(index));
 
   // Animation loop
+  let fpsFrames = 0;
+  let fpsTimeAnchor = performance.now();
+  let fpsLastSample = fpsTimeAnchor;
+
   function animate() {
     requestAnimationFrame(animate);
+
+    const now = performance.now();
+    fpsFrames += 1;
+    if (now - fpsLastSample >= 250) {
+      const elapsed = now - fpsTimeAnchor;
+      const fps = (fpsFrames * 1000) / Math.max(elapsed, 1);
+      ui.settings.setFps(fps);
+      fpsFrames = 0;
+      fpsTimeAnchor = now;
+      fpsLastSample = now;
+    }
 
     globeSetup.rotate(0.0005);
     globeSetup.celestial.moon.update();
@@ -178,6 +193,8 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   container.addEventListener("mousedown", (e) => {
     if (isFrom(e.target, '#sticker-popout')) return; 
     if (isFrom(e.target, '.controls')) return; 
+    if (isFrom(e.target, '#settings-panel')) return;
+    if (isFrom(e.target, '#settings-cog')) return;
     onDragStart();
     previousPos = { x: e.clientX, y: e.clientY };
     lastMoveTime = performance.now();
@@ -219,6 +236,8 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   container.addEventListener("touchstart", (e) => {
     if (isFrom(e.target, '#sticker-popout')) return; 
     if (isFrom(e.target, '.controls')) return; 
+    if (isFrom(e.target, '#settings-panel')) return;
+    if (isFrom(e.target, '#settings-cog')) return;
     if (e.touches.length === 1) {
       onDragStart();
       previousPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -231,6 +250,8 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   container.addEventListener("touchmove", (e) => {
     if (isFrom(e.target, '#sticker-popout')) return; 
     if (isFrom(e.target, '.controls')) return; 
+    if (isFrom(e.target, '#settings-panel')) return;
+    if (isFrom(e.target, '#settings-cog')) return;
     if (e.touches.length === 1 && isDragging) {
       const touch = e.touches[0];
       const now = performance.now();
@@ -272,7 +293,9 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   // Wheel zoom
   container.addEventListener("wheel",(e) => {
     if (isFrom(e.target, '#sticker-popout')) return; 
-      if (isFrom(e.target, '.controls')) return; 
+      if (isFrom(e.target, '.controls')) return;
+      if (isFrom(e.target, '#settings-panel')) return;
+      if (isFrom(e.target, '#settings-cog')) return;
       e.preventDefault();
       orbit.radius = Math.max(
         orbit.minRadius,
