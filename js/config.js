@@ -16,8 +16,8 @@ export const CONFIG = {
   },
   paths: {
     stickersJson: './data/stickers.json',
-    earthDay: './assets/materials/Earth_8k.jpg',
-    earthNight: './assets/materials/Night_8k.jpg',
+    earthDay: './assets/materials/Earth_16k.jpg',
+    earthNight: './assets/materials/Night_16k.jpg',
     moon: './assets/materials/Moon.jpg',
     mars: './assets/materials/Mars.jpg',
     mapPointer: './assets/materials/MapPointer.png'

@@ -46,7 +46,7 @@ export function createScene(container) {
   const dotScreenPass = new DotScreenPass(new THREE.Vector2(0, 0), 0.5, 0.9);
   const renderPixelatedPass = new RenderPixelatedPass(2, scene, camera);
   const afterimagePass = new AfterimagePass(0.2);
-  const bloomPass = new UnrealBloomPass(resolution, 1, 0, 1);
+  const bloomPass = new UnrealBloomPass(resolution, 0.1, 0, 1);
 
   const effects = [
     {
