@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import * as THREE from 'three';
 
 export function createGlobe(scene, textureLoader, gltfLoader) {
   // Shaders
@@ -25,11 +26,46 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
       float sunIntensity = dot(vNormalWorld, normalize(uSunDirectionWorld));
       float mixFactor = smoothstep(-0.1, 0.1, sunIntensity);
       vec3 color = mix(nightColor, dayColor, mixFactor);
-      float spec = pow(max(dot(vNormalWorld, normalize(uSunDirectionWorld)), 0.0), 16.0) * 0.4;
-      color += vec3(spec);
+
+        float nightAmount = 1.0 - clamp(sunIntensity * 5.0 + 0.5, 0.0, 1.0);
+      // Extract bright parts (city lights) from night texture
+      float cityMask = smoothstep(0.6, 1.0, max(max(nightColor.r, nightColor.g), nightColor.b));
+      vec3 cityLights = nightColor * cityMask * nightAmount * 2.0; // 2.0 = boost intensity
+
+      color += cityLights;
       gl_FragColor = vec4(color, 1.0);
     }
   `;
+
+  const sunGlowVertexShader = `
+  varying vec3 vNormal;
+  varying vec3 vWorldPos;
+
+  void main() {
+    vNormal = normalize(normalMatrix * normal);
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    vWorldPos = worldPos.xyz;
+    gl_Position = projectionMatrix * viewMatrix * worldPos;
+  }
+`;
+
+const sunGlowFragmentShader = `
+  uniform vec3 uGlowColor;
+  uniform float uIntensity;
+  uniform float uPower;
+
+  varying vec3 vNormal;
+  varying vec3 vWorldPos;
+
+  void main() {
+    // Make glow stronger around the edges (facing away from camera)
+    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+    float fresnel = pow(1.0 - max(dot(vNormal, viewDir), 0.0), uPower);
+
+    float alpha = fresnel * uIntensity;
+    gl_FragColor = vec4(uGlowColor, alpha);
+  }
+`;
 
   // Textures
   const dayTexture = textureLoader.load(CONFIG.paths.earthDay);
@@ -50,6 +86,35 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
   const globe = new THREE.Mesh(geometry, material);
   scene.add(globe);
 
+  // Sun and glow are created once to avoid per-frame allocations.
+  const sun = new THREE.Mesh(
+    new THREE.SphereGeometry(1.1, 20, 12),
+    new THREE.MeshBasicMaterial({ color: 0xffe88a })
+  );
+  sun.position.set(-8, 3, 2);
+  scene.add(sun);
+
+  const sunGlow = new THREE.Mesh(
+    new THREE.SphereGeometry(1.45, 14, 10),
+    new THREE.ShaderMaterial({
+      vertexShader: sunGlowVertexShader,
+      fragmentShader: sunGlowFragmentShader,
+      uniforms: {
+        uGlowColor: { value: new THREE.Color(0xffc45c) },
+        uIntensity: { value: 0.3 },
+        uPower: { value: 1.7 }
+      },
+      side: THREE.BackSide,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    })
+  );
+  sunGlow.position.copy(sun.position);
+  scene.add(sunGlow);
+
+  material.uniforms.uSunDirectionWorld.value.copy(sun.position).normalize();
+
   // Celestial bodies
   const celestial = {
     moon: createCelestialBody(0.27, CONFIG.paths.moon, textureLoader, 3, 0.001, 15),
@@ -65,7 +130,7 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
     texture.colorSpace = THREE.SRGBColorSpace;
     const material = new THREE.MeshStandardMaterial({ map: texture, roughness: 1, metalness: 0 });
     const mesh = new THREE.Mesh(geometry, material);
-    
+
     return {
       mesh,
       orbitRadius,
@@ -76,7 +141,7 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
         this.mesh.position.x = Math.cos(this.angle) * this.orbitRadius;
         this.mesh.position.z = Math.sin(this.angle) * this.orbitRadius;
         this.mesh.rotation.y += 0.001;
-      }
+      },
     };
   }
 
@@ -96,7 +161,7 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
       const model = gltf.scene;
       model.scale.set(...opts.scale);
       globe.add(model);
-      
+
       model.userData.orbit = {
         radius: opts.radius,
         speed: opts.speed,
@@ -109,6 +174,10 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
       model.traverse(n => {
         if (n.isMesh) {
           n.castShadow = n.receiveShadow = false;
+          if (n.material && 'emissive' in n.material) {
+            n.material.emissive = new THREE.Color(0x1a1a1a);
+            n.material.emissiveIntensity = 0.45;
+          }
         }
       });
     });
@@ -135,6 +204,8 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
   return {
     globe,
     celestial,
+    sun,
+    sunGlow,
     updateOrbitingModels,
     rotate: (delta) => globe.rotation.y += delta
   };
