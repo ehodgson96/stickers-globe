@@ -21,6 +21,9 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
     stickerData.forEach((sticker, index) => {
       const item = document.createElement('div');
       item.className = 'sticker-item';
+      const coords = (sticker.lat != null && sticker.lng != null)
+        ? `${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°`
+        : 'Location classified';
       item.innerHTML = `
         <div class="sticker-row">
           <div class="sticker-title">${sticker.title}</div>
@@ -28,7 +31,7 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
         <div class="sticker-row">
           <div class="sticker-date">${sticker.date}</div>
         </div>
-        <div class="sticker-coords">${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°</div>
+        <div class="sticker-coords">${coords}</div>
       `;
       item.addEventListener('click', () => onSidebarClick(index));
       stickerList.appendChild(item);
@@ -71,7 +74,9 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
       if (popoutDate) popoutDate.textContent = s.date || '';
       if (popoutLikes) popoutLikes.textContent = s.likeCount ? `${s.likeCount} likes` : '';
       if (popoutCoords) {
-        popoutCoords.textContent = `${Number(s.lat).toFixed(4)}°, ${Number(s.lng).toFixed(4)}°`;
+        popoutCoords.textContent = (s.lat != null && s.lng != null)
+          ? `${Number(s.lat).toFixed(4)}°, ${Number(s.lng).toFixed(4)}°`
+          : 'Location classified';
       }
       if (popoutLink) popoutLink.href = s.link || '#';
       if (popoutImage) {

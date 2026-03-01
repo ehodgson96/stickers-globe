@@ -16,19 +16,28 @@ export function createMarkers(
   const pointerTexture = textureLoader.load(CONFIG.paths.mapPointer);
 
   stickerData.forEach((sticker, index) => {
+    if (sticker.isMoon) return; // placed separately on the moon mesh
+
     const pos = latLngToVector3(sticker.lat, sticker.lng);
     const spriteContainer = new THREE.Object3D();
-    spriteContainer.position.copy(pos);
+    // Tiny offset above the surface to avoid z-fighting; tip is anchored at this point
+    spriteContainer.position.copy(pos.multiplyScalar(1.005));
 
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
         map: pointerTexture,
-        sizeAttenuation: false
+        sizeAttenuation: false,
+        depthTest: false,
+        transparent: true
       })
     );
 
+    // Anchor at the bottom centre so the pin tip sits at the surface point.
+    // depthTest: false means the body never clips into the globe regardless of
+    // where on the sphere the marker sits relative to the camera.
+    sprite.center.set(0.5, 0);
+    sprite.renderOrder = 1;
     sprite.scale.set(CONFIG.marker.base, CONFIG.marker.base, 1);
-    sprite.position.y = 0.001;
     sprite.userData = { index, sticker };
 
     spriteContainer.add(sprite);
@@ -50,12 +59,32 @@ export function createMarkers(
   let isDragging = false;
   let touchStartTime = 0;
 
+  // Reused each frame to avoid per-frame allocations
+  const _invGlobe = new THREE.Matrix4();
+  const _camLocal = new THREE.Vector3();
+  const _moonWorldPos = new THREE.Vector3();
+  const _camToMoon = new THREE.Vector3();
+
+  let moonMarker = null; // set when addMoonMarker is called
+
   function handleSelection(clientX, clientY, rect) {
     mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
+
+    // Determine where the ray hits the globe surface so we can reject
+    // markers that are on the far (hidden) side of the globe
+    const globeHits = raycaster.intersectObject(globe, false);
+    const globeDist = globeHits.length > 0 ? globeHits[0].distance : Infinity;
+
     const intersects = raycaster.intersectObjects(markers, true);
-    return intersects.length > 0 ? intersects[0].object.userData.index : null;
+    if (intersects.length === 0) return null;
+
+    const hit = intersects[0];
+    // Moon marker lives on the moon, not the globe — skip globe occlusion check
+    if (!hit.object.userData.isMoonMarker && hit.distance > globeDist) return null;
+
+    return hit.object.userData.index;
   }
 
   container.addEventListener('click', (e) => {
@@ -87,7 +116,45 @@ export function createMarkers(
       CONFIG.marker.min,
       CONFIG.marker.max
     );
-    markers.forEach((m) => m.scale.set(s, s, 1));
+
+    // Transform camera into globe-local space so we can cheaply determine
+    // which markers are on the back hemisphere and should be hidden.
+    globe.updateMatrixWorld(true);
+    _invGlobe.copy(globe.matrixWorld).invert();
+    _camLocal.copy(camera.position).applyMatrix4(_invGlobe);
+
+    markers.forEach((m) => {
+      if (m.userData.isMoonMarker) return; // handled separately below
+      m.scale.set(s, s, 1);
+      // m.parent is the spriteContainer; its position is in globe-local space.
+      // Positive dot = same hemisphere as camera = visible.
+      m.visible = m.parent.position.dot(_camLocal) > 0;
+    });
+
+    // Moon marker: smaller scale + ray-sphere occlusion against the globe
+    if (moonMarker) {
+      const ms = s * 0.55;
+      moonMarker.scale.set(ms, ms, 1);
+
+      // globe.updateMatrixWorld(true) was already called above, so world
+      // positions of all descendants (including moon mesh children) are current
+      moonMarker.getWorldPosition(_moonWorldPos);
+      _camToMoon.copy(_moonWorldPos).sub(camera.position);
+      const moonDist = _camToMoon.length();
+      _camToMoon.divideScalar(moonDist); // normalise in-place (rayDir)
+
+      // Ray–sphere test: globe sphere at world origin, radius 1
+      // t² + 2t·b + c = 0  where b = camPos·rayDir, c = |camPos|²−1
+      const b = camera.position.dot(_camToMoon);
+      const c = camera.position.dot(camera.position) - 1.0;
+      const disc = b * b - c;
+      if (disc >= 0) {
+        const tNear = -b - Math.sqrt(disc); // near intersection distance
+        moonMarker.visible = !(tNear > 0 && tNear < moonDist);
+      } else {
+        moonMarker.visible = true; // ray misses globe
+      }
+    }
   }
 
   function highlightMarker(index) {
@@ -96,11 +163,33 @@ export function createMarkers(
     });
   }
 
+  function addMoonMarker(moonMesh, stickerEntry, index) {
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: pointerTexture,
+        sizeAttenuation: false,
+        depthTest: false,
+        transparent: true
+      })
+    );
+    sprite.center.set(0.5, 0);
+    sprite.renderOrder = 1;
+    // Scale is set each frame by updateScales (55 % of normal marker size)
+    sprite.scale.set(CONFIG.marker.base * 0.55, CONFIG.marker.base * 0.55, 1);
+    // Place just above the moon's north pole (moon radius = 0.27)
+    sprite.position.set(0, 0.285, 0);
+    sprite.userData = { index, sticker: stickerEntry, isMoonMarker: true, noFly: true };
+    moonMesh.add(sprite);
+    moonMarker = sprite; // store reference for per-frame occlusion check
+    markers.push(sprite);
+  }
+
   return {
     markers,
     markerGroup,
     updateScales,
     highlightMarker,
+    addMoonMarker,
     setDragging: (val) => (isDragging = val),
     onSelect: (callback) => (onMarkerClick = callback)
   };

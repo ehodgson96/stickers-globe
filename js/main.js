@@ -20,6 +20,16 @@ async function init() {
     console.error("Error loading stickers:", error);
   }
 
+  // Moon easter egg — added before UI/markers so it appears in the sidebar
+  stickerData.push({
+    title: 'The Moon',
+    date: '???',
+    link: 'https://www.shroomsquad.co.uk',
+    imageUrl: '../materials/Moon.jpg',
+    likeCount: '∞',
+    isMoon: true
+  });
+
   // Setup loading manager
   const loadingManager = new THREE.LoadingManager();
   const textureLoader = new THREE.TextureLoader(loadingManager);
@@ -49,6 +59,11 @@ async function init() {
     sceneSetup.camera,
     container
   );
+  markerSetup.addMoonMarker(
+    globeSetup.celestial.moon.mesh,
+    stickerData[stickerData.length - 1],
+    stickerData.length - 1
+  );
   setupControls(container, sceneSetup, markerSetup, ui);
 
   // Selection logic
@@ -57,6 +72,13 @@ async function init() {
   function selectSticker(index) {
     ui.sidebar.setActive(index);
     markerSetup.highlightMarker(index);
+
+    // Moon marker (and any future noFly markers): show popout, skip camera fly
+    const marker = markerSetup.markers[index];
+    if (marker && marker.userData.noFly) {
+      ui.popout.show(index);
+      return;
+    }
 
     const markerContainer = markerSetup.markerGroup.children[index];
     const worldPos = new THREE.Vector3();
