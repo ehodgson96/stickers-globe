@@ -20,8 +20,7 @@ export function createMarkers(
 
     const pos = latLngToVector3(sticker.lat, sticker.lng);
     const spriteContainer = new THREE.Object3D();
-    // Tiny offset above the surface to avoid z-fighting; tip is anchored at this point
-    spriteContainer.position.copy(pos.multiplyScalar(1.005));
+    spriteContainer.position.copy(pos.multiplyScalar(1.001));
 
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
@@ -37,8 +36,10 @@ export function createMarkers(
     // where on the sphere the marker sits relative to the camera.
     sprite.center.set(0.5, 0);
     sprite.renderOrder = 1;
+    const baseTilt = (Math.random() - 0.5) * 0.5; // ±~14° random tilt around the tip
+    sprite.material.rotation = baseTilt;
     sprite.scale.set(CONFIG.marker.base, CONFIG.marker.base, 1);
-    sprite.userData = { index, sticker };
+    sprite.userData = { index, sticker, baseTilt, phase: Math.random() * Math.PI * 2 };
 
     spriteContainer.add(sprite);
     markerGroup.add(spriteContainer);
@@ -178,16 +179,25 @@ export function createMarkers(
     sprite.scale.set(CONFIG.marker.base * 0.55, CONFIG.marker.base * 0.55, 1);
     // Place just above the moon's north pole (moon radius = 0.27)
     sprite.position.set(0, 0.285, 0);
-    sprite.userData = { index, sticker: stickerEntry, isMoonMarker: true, noFly: true };
+    sprite.userData = { index, sticker: stickerEntry, isMoonMarker: true, noFly: true, baseTilt: 0, phase: Math.random() * Math.PI * 2 };
     moonMesh.add(sprite);
     moonMarker = sprite; // store reference for per-frame occlusion check
     markers.push(sprite);
+  }
+
+  function updateSway(time) {
+    markers.forEach((m) => {
+      const { baseTilt, phase } = m.userData;
+      if (baseTilt === undefined) return;
+      m.material.rotation = baseTilt + Math.sin(time * 1.5 + phase) * 0.08;
+    });
   }
 
   return {
     markers,
     markerGroup,
     updateScales,
+    updateSway,
     highlightMarker,
     addMoonMarker,
     setDragging: (val) => (isDragging = val),

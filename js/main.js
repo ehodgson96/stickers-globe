@@ -177,6 +177,7 @@ async function init() {
 
     sceneSetup.updateCamera();
     markerSetup.updateScales(sceneSetup.orbit.radius);
+    markerSetup.updateSway(performance.now() / 1000);
     sceneSetup.render();
   }
 
