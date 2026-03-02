@@ -278,5 +278,15 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
     });
   }
 
+  // Sidebar toggle
+  const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+  const sidebarEl = document.querySelector('.sidebar');
+  if (sidebarToggleBtn && sidebarEl) {
+    sidebarToggleBtn.addEventListener('click', () => {
+      const collapsed = sidebarEl.classList.toggle('collapsed');
+      sidebarToggleBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    });
+  }
+
   return { loading, sidebar, popout: popoutUI, settings };
 }
