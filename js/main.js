@@ -183,6 +183,7 @@ async function init() {
     }
 
     globeSetup.rotate(0.0005);
+    globeSetup.sun.update();
     globeSetup.celestial.moon.update();
     globeSetup.celestial.mars.update();
     globeSetup.updateOrbitingModels();

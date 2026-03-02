@@ -20,7 +20,8 @@ export const CONFIG = {
     earthNight: './assets/materials/Night_8k.jpg',
     moon: './assets/materials/Moon.jpg',
     mars: './assets/materials/Mars.jpg',
-    mapPointer: './assets/materials/MapPointer.png'
+    mapPointer: './assets/materials/MapPointer.png',
+    sunMap:     './assets/materials/suntexture.jpg'
   }
 };
 
