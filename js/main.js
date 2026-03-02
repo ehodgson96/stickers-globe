@@ -26,7 +26,7 @@ async function init() {
     title: 'UFO',
     date: '???',
     link: 'https://www.shroomsquad.co.uk',
-    imageUrl: '../materials/ShroomSquad.png',
+    imageUrl: 'UFOSticker.png',
     likeCount: '∞',
     isUfo: true
   });
@@ -34,7 +34,7 @@ async function init() {
     title: 'The Moon',
     date: '???',
     link: 'https://www.shroomsquad.co.uk',
-    imageUrl: '../materials/Moon.jpg',
+    imageUrl: 'MoonSticker.png',
     likeCount: '∞',
     isMoon: true
   });
@@ -97,6 +97,7 @@ async function init() {
   let currentAnimation = null;
 
   function selectSticker(index) {
+    ui.sidebar.reveal(index);
     ui.sidebar.setActive(index);
     markerSetup.highlightMarker(index);
     featureSetup.onSelect(index);

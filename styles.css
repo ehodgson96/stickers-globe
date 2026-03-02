@@ -255,6 +255,17 @@ body {
   transform: translateY(-1px);
 }
 
+.sticker-item.locked {
+  opacity: 0.4;
+  cursor: default;
+  border-style: dashed;
+}
+
+.sticker-item.locked .sticker-title {
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
 .sticker-item.active {
   background: var(--accent);
   border-color: #ffffff;

@@ -20,20 +20,25 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
   if (stickerList) {
     stickerData.forEach((sticker, index) => {
       const item = document.createElement('div');
-      item.className = 'sticker-item';
+      const isSecret = sticker.isMoon || sticker.isUfo;
+      item.className = 'sticker-item' + (isSecret ? ' locked' : '');
       const coords = (sticker.lat != null && sticker.lng != null)
         ? `${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°`
         : 'Location classified';
+      const displayTitle = isSecret ? '???' : sticker.title;
       item.innerHTML = `
         <div class="sticker-row">
-          <div class="sticker-title">${sticker.title}</div>
+          <div class="sticker-title">${displayTitle}</div>
         </div>
         <div class="sticker-row">
           <div class="sticker-date">${sticker.date}</div>
         </div>
         <div class="sticker-coords">${coords}</div>
       `;
-      item.addEventListener('click', () => onSidebarClick(index));
+      item.addEventListener('click', () => {
+        if (item.classList.contains('locked')) return;
+        onSidebarClick(index);
+      });
       stickerList.appendChild(item);
     });
   }
@@ -50,6 +55,14 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
     },
     onClick: (callback) => {
       onSidebarClick = callback;
+    },
+    reveal: (index) => {
+      const items = document.querySelectorAll('.sticker-item');
+      const item = items[index];
+      if (!item || !item.classList.contains('locked')) return;
+      item.classList.remove('locked');
+      const titleEl = item.querySelector('.sticker-title');
+      if (titleEl) titleEl.textContent = stickerData[index].title;
     }
   };
 
