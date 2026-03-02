@@ -2,6 +2,7 @@ import { CONFIG } from "./config.js";
 import { createScene } from "./scene.js";
 import { createGlobe } from "./globe.js";
 import { createMarkers } from "./markers.js";
+import { createFeatures } from "./features.js";
 import { createUI } from "./ui.js";
 import { vectorToAngles, animateOrbit } from "./utils.js";
 import * as THREE from 'three';
@@ -76,6 +77,13 @@ async function init() {
     moonIndex
   );
 
+  const featureSetup = createFeatures({
+    scene:      sceneSetup.scene,
+    globe:      globeSetup.globe,
+    globeSetup
+  });
+  ui.settings.addFeatures([markerSetup.markerFeature, ...featureSetup.features]);
+
   // UFO GLTF is async — add its marker once everything has loaded
   loadingManager.onLoad = () => {
     ui.loading.hide();
@@ -91,6 +99,7 @@ async function init() {
   function selectSticker(index) {
     ui.sidebar.setActive(index);
     markerSetup.highlightMarker(index);
+    featureSetup.onSelect(index);
 
     // Moon marker (and any future noFly markers): show popout, skip camera fly
     const marker = markerSetup.markers[index];
@@ -142,11 +151,14 @@ async function init() {
   let fpsFrames = 0;
   let fpsTimeAnchor = performance.now();
   let fpsLastSample = fpsTimeAnchor;
+  let prevTime = performance.now();
 
   function animate() {
     requestAnimationFrame(animate);
 
     const now = performance.now();
+    const dt = Math.min((now - prevTime) / 1000, 0.1); // seconds, capped at 100 ms
+    prevTime = now;
     fpsFrames += 1;
     if (now - fpsLastSample >= 250) {
       const elapsed = now - fpsTimeAnchor;
@@ -197,6 +209,7 @@ async function init() {
     sceneSetup.updateCamera();
     markerSetup.updateScales(sceneSetup.orbit.radius);
     markerSetup.updateSway(performance.now() / 1000);
+    featureSetup.update(now / 1000, dt);
     sceneSetup.render();
   }
 

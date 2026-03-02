@@ -73,7 +73,7 @@ const sunGlowFragmentShader = `
   dayTexture.colorSpace = nightTexture.colorSpace = THREE.SRGBColorSpace;
 
   // Globe mesh
-  const geometry = new THREE.SphereGeometry(1, 16, 10);
+  const geometry = new THREE.SphereGeometry(1, 32, 20);
   const material = new THREE.ShaderMaterial({
     vertexShader,
     fragmentShader,

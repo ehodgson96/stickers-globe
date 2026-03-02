@@ -613,6 +613,16 @@ body {
   color: var(--green);
 }
 
+.settings-section-sep {
+  margin: 12px 0 8px;
+  padding: 5px 0 4px;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+}
+
 .logo {
   position: absolute;
   top: 20px;
