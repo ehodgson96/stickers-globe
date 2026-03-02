@@ -25,7 +25,7 @@ export function createMarkers(
 
     const pos = latLngToVector3(sticker.lat, sticker.lng);
     const spriteContainer = new THREE.Object3D();
-    spriteContainer.position.copy(pos.multiplyScalar(1.00));
+    spriteContainer.position.copy(pos);
 
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
@@ -209,8 +209,10 @@ export function createMarkers(
     // Threshold scales linearly from 0 (full zoom-in, no clustering) to
     // 80 px (full zoom-out, heavy clustering).  At minimum orbit radius every
     // marker is guaranteed to be shown individually.
-    const zoomT  = (orbitRadius - CONFIG.orbit.minRadius) /
-                   (CONFIG.orbit.maxRadius - CONFIG.orbit.minRadius);
+    const orbitRange = CONFIG.orbit.maxRadius - CONFIG.orbit.minRadius;
+    const zoomT  = orbitRange !== 0
+      ? (orbitRadius - CONFIG.orbit.minRadius) / orbitRange
+      : 0;
     const THRESH = clusteringEnabled ? Math.max(0, zoomT * clusterThresholdBase) : 0;
 
     // Collect screen positions for every fully-visible regular marker.

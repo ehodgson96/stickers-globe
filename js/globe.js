@@ -79,6 +79,7 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
     }
   });
   const globe = new THREE.Mesh(geometry, material);
+  globe.rotation.y = THREE.MathUtils.degToRad(-180);
   scene.add(globe);
 
   // Sun — layered gas-ball: 3 semi-transparent spheres sharing the same texture,

@@ -133,7 +133,7 @@ body {
 #globe-container {
   flex: 1;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* ─── SIDEBAR: CRT panel look ───────────────────────────────────────── */
