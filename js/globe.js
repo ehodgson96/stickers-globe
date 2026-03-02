@@ -37,35 +37,30 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
     }
   `;
 
-  const sunGlowVertexShader = `
-  varying vec3 vNormal;
-  varying vec3 vWorldPos;
-
-  void main() {
-    vNormal = normalize(normalMatrix * normal);
-    vec4 worldPos = modelMatrix * vec4(position, 1.0);
-    vWorldPos = worldPos.xyz;
-    gl_Position = projectionMatrix * viewMatrix * worldPos;
-  }
-`;
-
-const sunGlowFragmentShader = `
-  uniform vec3 uGlowColor;
-  uniform float uIntensity;
-  uniform float uPower;
-
-  varying vec3 vNormal;
-  varying vec3 vWorldPos;
-
-  void main() {
-    // Make glow stronger around the edges (facing away from camera)
-    vec3 viewDir = normalize(cameraPosition - vWorldPos);
-    float fresnel = pow(1.0 - max(dot(vNormal, viewDir), 0.0), uPower);
-
-    float alpha = fresnel * uIntensity;
-    gl_FragColor = vec4(uGlowColor, alpha);
-  }
-`;
+  const sunCoronaVertexShader = `
+    varying vec3 vNormal;
+    varying vec3 vWorldPos;
+    void main() {
+      vec4 wp   = modelMatrix * vec4(position, 1.0);
+      vWorldPos = wp.xyz;
+      vNormal   = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+      gl_Position = projectionMatrix * viewMatrix * wp;
+    }
+  `;
+  const sunCoronaFragmentShader = `
+    uniform vec3  uColor;
+    uniform float uIntensity;
+    uniform float uPower;
+    varying vec3  vNormal;
+    varying vec3  vWorldPos;
+    void main() {
+      vec3  viewDir = normalize(cameraPosition - vWorldPos);
+      float c       = max(dot(vNormal, viewDir), 0.0);
+      float edge    = smoothstep(0.0, 0.25, c);
+      float glow    = edge * pow(1.0 - c, uPower);
+      gl_FragColor  = vec4(uColor, glow * uIntensity);
+    }
+  `;
 
   // Textures
   const dayTexture = textureLoader.load(CONFIG.paths.earthDay);
@@ -73,7 +68,7 @@ const sunGlowFragmentShader = `
   dayTexture.colorSpace = nightTexture.colorSpace = THREE.SRGBColorSpace;
 
   // Globe mesh
-  const geometry = new THREE.SphereGeometry(1, 16, 10);
+  const geometry = new THREE.SphereGeometry(1, 32, 20);
   const material = new THREE.ShaderMaterial({
     vertexShader,
     fragmentShader,
@@ -86,34 +81,61 @@ const sunGlowFragmentShader = `
   const globe = new THREE.Mesh(geometry, material);
   scene.add(globe);
 
-  // Sun and glow are created once to avoid per-frame allocations.
-  const sun = new THREE.Mesh(
-    new THREE.SphereGeometry(1.1, 20, 12),
-    new THREE.MeshBasicMaterial({ color: 0xffe88a })
-  );
-  sun.position.set(-8, 3, 2);
-  scene.add(sun);
+  // Sun — layered gas-ball: 3 semi-transparent spheres sharing the same texture,
+  // each rotating on a different axis/speed so their surface patterns slide past
+  // each other and give the illusion of turbulent convection.
+  const sunPosition = new THREE.Vector3(-8, 3, 2);
+  const sunTexture = textureLoader.load(CONFIG.paths.sunMap);
+  sunTexture.colorSpace = THREE.SRGBColorSpace;
+
+  const sunLayerDefs = [
+    { scale: 1.10,  opacity: 0.90, rx:  0,        ry:  0.0004, rz:  0       },
+    { scale: 1.115, opacity: 0.50, rx:  0.00015,  ry: -0.0003, rz:  0.0001  },
+    { scale: 1.13,  opacity: 0.25, rx: -0.0001,   ry:  0.00025,rz: -0.00015 },
+  ];
+
+  const sunLayers = sunLayerDefs.map(def => {
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(def.scale, 28, 18),
+      new THREE.MeshBasicMaterial({
+        map: sunTexture,
+        transparent: true,
+        opacity: def.opacity,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    mesh.position.copy(sunPosition);
+    // Start each layer at a random orientation so they don't all show the same face
+    mesh.rotation.set(
+      Math.random() * Math.PI * 2,
+      Math.random() * Math.PI * 2,
+      Math.random() * Math.PI * 2
+    );
+    scene.add(mesh);
+    return { mesh, rx: def.rx, ry: def.ry, rz: def.rz };
+  });
 
   const sunGlow = new THREE.Mesh(
-    new THREE.SphereGeometry(1.45, 14, 10),
+    new THREE.SphereGeometry(2, 32, 20),
     new THREE.ShaderMaterial({
-      vertexShader: sunGlowVertexShader,
-      fragmentShader: sunGlowFragmentShader,
+      vertexShader: sunCoronaVertexShader,
+      fragmentShader: sunCoronaFragmentShader,
       uniforms: {
-        uGlowColor: { value: new THREE.Color(0xffc45c) },
-        uIntensity: { value: 0.3 },
-        uPower: { value: 1.7 }
+        uColor:     { value: new THREE.Color(0xff7722) },
+        uIntensity: { value: 0.1 },
+        uPower:     { value: 4.0 }
       },
-      side: THREE.BackSide,
+      side:        THREE.FrontSide,
       transparent: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false
+      blending:    THREE.AdditiveBlending,
+      depthWrite:  false
     })
   );
-  sunGlow.position.copy(sun.position);
+  sunGlow.position.copy(sunPosition);
   scene.add(sunGlow);
 
-  material.uniforms.uSunDirectionWorld.value.copy(sun.position).normalize();
+  material.uniforms.uSunDirectionWorld.value.copy(sunPosition).normalize();
 
   // Celestial bodies
   const celestial = {
@@ -146,8 +168,31 @@ const sunGlowFragmentShader = `
   }
 
   // Orbiting models
+  let ufoModel = null;
+
+  gltfLoader.load('./assets/models/UFO.glb', (gltf) => {
+    const model = gltf.scene;
+    model.scale.set(0.1, 0.1, 0.1);
+    globe.add(model);
+    model.userData.orbit = {
+      radius: 2, speed: 0.0012,
+      angle: Math.random() * Math.PI * 2,
+      tilt: THREE.MathUtils.degToRad(-25),
+      zSpin: false, ySpin: true
+    };
+    model.traverse(n => {
+      if (n.isMesh) {
+        n.castShadow = n.receiveShadow = false;
+        if (n.material && 'emissive' in n.material) {
+          n.material.emissive = new THREE.Color(0x1a1a1a);
+          n.material.emissiveIntensity = 0.45;
+        }
+      }
+    });
+    ufoModel = model;
+  });
+
   const models = [
-    { path: './assets/models/UFO.glb', radius: 2, speed: 0.0012, scale: [0.1, 0.1, 0.1], tilt: -25, ySpin: true },
     { path: './assets/models/Cow.glb', radius: 1.1, speed: 0.0008, scale: [0.01, 0.01, 0.01], tilt: 15, zSpin: true, ySpin: true },
     { path: './assets/models/Rocket.glb', radius: 1.8, speed: -0.0006, scale: [0.002, 0.002, 0.002], tilt: 30, zSpin: true },
     { path: './assets/models/Satellite.glb', radius: 1.4, speed: 0.0002, scale: [0.003, 0.003, 0.003], tilt: 5, zSpin: true },
@@ -204,9 +249,18 @@ const sunGlowFragmentShader = `
   return {
     globe,
     celestial,
-    sun,
+    sun: {
+      update() {
+        sunLayers.forEach(l => {
+          l.mesh.rotation.x += l.rx;
+          l.mesh.rotation.y += l.ry;
+          l.mesh.rotation.z += l.rz;
+        });
+      }
+    },
     sunGlow,
     updateOrbitingModels,
-    rotate: (delta) => globe.rotation.y += delta
+    rotate: (delta) => globe.rotation.y += delta,
+    get ufo() { return ufoModel; }
   };
 }
