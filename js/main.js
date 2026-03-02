@@ -20,7 +20,15 @@ async function init() {
     console.error("Error loading stickers:", error);
   }
 
-  // Moon easter egg — added before UI/markers so it appears in the sidebar
+  // Special markers — added before UI/markers so they appear in the sidebar
+  stickerData.push({
+    title: 'UFO',
+    date: '???',
+    link: 'https://www.shroomsquad.co.uk',
+    imageUrl: '../materials/ShroomSquad.png',
+    likeCount: '∞',
+    isUfo: true
+  });
   stickerData.push({
     title: 'The Moon',
     date: '???',
@@ -46,7 +54,6 @@ async function init() {
   );
 
   loadingManager.onStart = () => ui.loading.show();
-  loadingManager.onLoad = () => ui.loading.hide();
   loadingManager.onError = (url) => console.error(`Error loading ${url}`);
 
   // Create globe and markers
@@ -59,11 +66,23 @@ async function init() {
     sceneSetup.camera,
     container
   );
+
+  const moonIndex = stickerData.length - 1;
+  const ufoIndex = stickerData.length - 2;
+
   markerSetup.addMoonMarker(
     globeSetup.celestial.moon.mesh,
-    stickerData[stickerData.length - 1],
-    stickerData.length - 1
+    stickerData[moonIndex],
+    moonIndex
   );
+
+  // UFO GLTF is async — add its marker once everything has loaded
+  loadingManager.onLoad = () => {
+    ui.loading.hide();
+    if (globeSetup.ufo) {
+      markerSetup.addUfoMarker(globeSetup.ufo, stickerData[ufoIndex], ufoIndex);
+    }
+  };
   setupControls(container, sceneSetup, markerSetup, ui);
 
   // Selection logic
@@ -214,10 +233,11 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
 
   // Mouse
   container.addEventListener("mousedown", (e) => {
-    if (isFrom(e.target, '#sticker-popout')) return; 
-    if (isFrom(e.target, '.controls')) return; 
+    if (isFrom(e.target, '#sticker-popout')) return;
+    if (isFrom(e.target, '.controls')) return;
     if (isFrom(e.target, '#settings-panel')) return;
     if (isFrom(e.target, '#settings-cog')) return;
+    if (isFrom(e.target, '#sidebar-toggle')) return;
     onDragStart();
     previousPos = { x: e.clientX, y: e.clientY };
     lastMoveTime = performance.now();
@@ -257,10 +277,11 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   }
 
   container.addEventListener("touchstart", (e) => {
-    if (isFrom(e.target, '#sticker-popout')) return; 
-    if (isFrom(e.target, '.controls')) return; 
+    if (isFrom(e.target, '#sticker-popout')) return;
+    if (isFrom(e.target, '.controls')) return;
     if (isFrom(e.target, '#settings-panel')) return;
     if (isFrom(e.target, '#settings-cog')) return;
+    if (isFrom(e.target, '#sidebar-toggle')) return;
     if (e.touches.length === 1) {
       onDragStart();
       previousPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };

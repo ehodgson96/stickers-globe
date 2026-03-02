@@ -373,7 +373,7 @@ export function createScene(container) {
     outlinePass.resolution.set(container.clientWidth, container.clientHeight);
   }
 
-  window.addEventListener('resize', handleResize);
+  new ResizeObserver(handleResize).observe(container);
 
   const postProcessing = {
     effects: effects.map((effect) => ({

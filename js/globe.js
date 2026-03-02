@@ -146,8 +146,31 @@ const sunGlowFragmentShader = `
   }
 
   // Orbiting models
+  let ufoModel = null;
+
+  gltfLoader.load('./assets/models/UFO.glb', (gltf) => {
+    const model = gltf.scene;
+    model.scale.set(0.1, 0.1, 0.1);
+    globe.add(model);
+    model.userData.orbit = {
+      radius: 2, speed: 0.0012,
+      angle: Math.random() * Math.PI * 2,
+      tilt: THREE.MathUtils.degToRad(-25),
+      zSpin: false, ySpin: true
+    };
+    model.traverse(n => {
+      if (n.isMesh) {
+        n.castShadow = n.receiveShadow = false;
+        if (n.material && 'emissive' in n.material) {
+          n.material.emissive = new THREE.Color(0x1a1a1a);
+          n.material.emissiveIntensity = 0.45;
+        }
+      }
+    });
+    ufoModel = model;
+  });
+
   const models = [
-    { path: './assets/models/UFO.glb', radius: 2, speed: 0.0012, scale: [0.1, 0.1, 0.1], tilt: -25, ySpin: true },
     { path: './assets/models/Cow.glb', radius: 1.1, speed: 0.0008, scale: [0.01, 0.01, 0.01], tilt: 15, zSpin: true, ySpin: true },
     { path: './assets/models/Rocket.glb', radius: 1.8, speed: -0.0006, scale: [0.002, 0.002, 0.002], tilt: 30, zSpin: true },
     { path: './assets/models/Satellite.glb', radius: 1.4, speed: 0.0002, scale: [0.003, 0.003, 0.003], tilt: 5, zSpin: true },
@@ -207,6 +230,7 @@ const sunGlowFragmentShader = `
     sun,
     sunGlow,
     updateOrbitingModels,
-    rotate: (delta) => globe.rotation.y += delta
+    rotate: (delta) => globe.rotation.y += delta,
+    get ufo() { return ufoModel; }
   };
 }

@@ -16,11 +16,11 @@ export function createMarkers(
   const pointerTexture = textureLoader.load(CONFIG.paths.mapPointer);
 
   stickerData.forEach((sticker, index) => {
-    if (sticker.isMoon) return; // placed separately on the moon mesh
+    if (sticker.isMoon || sticker.isUfo) return; // placed separately on their meshes
 
     const pos = latLngToVector3(sticker.lat, sticker.lng);
     const spriteContainer = new THREE.Object3D();
-    spriteContainer.position.copy(pos.multiplyScalar(1.001));
+    spriteContainer.position.copy(pos.multiplyScalar(1.00));
 
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
@@ -65,8 +65,11 @@ export function createMarkers(
   const _camLocal = new THREE.Vector3();
   const _moonWorldPos = new THREE.Vector3();
   const _camToMoon = new THREE.Vector3();
+  const _ufoWorldPos = new THREE.Vector3();
+  const _camToUfo = new THREE.Vector3();
 
   let moonMarker = null; // set when addMoonMarker is called
+  let ufoMarker = null;  // set when addUfoMarker is called
 
   function handleSelection(clientX, clientY, rect) {
     mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
@@ -156,11 +159,32 @@ export function createMarkers(
         moonMarker.visible = true; // ray misses globe
       }
     }
+
+    // UFO marker: same ray-sphere globe occlusion check
+    if (ufoMarker) {
+      const us = s * 6; // compensate for UFO model's 0.1 scale
+      ufoMarker.scale.set(us, us, 1);
+
+      ufoMarker.getWorldPosition(_ufoWorldPos);
+      _camToUfo.copy(_ufoWorldPos).sub(camera.position);
+      const ufoDist = _camToUfo.length();
+      _camToUfo.divideScalar(ufoDist);
+
+      const bu = camera.position.dot(_camToUfo);
+      const cu = camera.position.dot(camera.position) - 1.0;
+      const discu = bu * bu - cu;
+      if (discu >= 0) {
+        const tNear = -bu - Math.sqrt(discu);
+        ufoMarker.visible = !(tNear > 0 && tNear < ufoDist);
+      } else {
+        ufoMarker.visible = true;
+      }
+    }
   }
 
   function highlightMarker(index) {
-    markers.forEach((m, i) => {
-      m.material.color.setHex(i === index ? 0xe74c3c : 0xffffff);
+    markers.forEach((m) => {
+      m.material.color.setHex(m.userData.index === index ? 0xe74c3c : 0xffffff);
     });
   }
 
@@ -185,6 +209,27 @@ export function createMarkers(
     markers.push(sprite);
   }
 
+  function addUfoMarker(ufoMesh, stickerEntry, index) {
+    const sprite = new THREE.Sprite(
+      new THREE.SpriteMaterial({
+        map: pointerTexture,
+        sizeAttenuation: false,
+        depthTest: false,
+        transparent: true
+      })
+    );
+    sprite.center.set(0.5, 0);
+    sprite.renderOrder = 1;
+    // UFO model has scale 0.1, so divide the target screen size by 0.1 (×10 on base, ×6 net)
+    sprite.scale.set(CONFIG.marker.base * 6, CONFIG.marker.base * 6, 1);
+    // y=1 in model space → 0.1 world units above UFO centre
+    sprite.position.set(0, 1, 0);
+    sprite.userData = { index, sticker: stickerEntry, isUfoMarker: true, noFly: true, baseTilt: 0, phase: Math.random() * Math.PI * 2 };
+    ufoMesh.add(sprite);
+    ufoMarker = sprite;
+    markers.push(sprite);
+  }
+
   function updateSway(time) {
     markers.forEach((m) => {
       const { baseTilt, phase } = m.userData;
@@ -200,6 +245,7 @@ export function createMarkers(
     updateSway,
     highlightMarker,
     addMoonMarker,
+    addUfoMarker,
     setDragging: (val) => (isDragging = val),
     onSelect: (callback) => (onMarkerClick = callback)
   };
