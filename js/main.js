@@ -86,6 +86,9 @@ async function init() {
 
   // UFO GLTF is async — add its marker once everything has loaded
   loadingManager.onLoad = () => {
+    // Reset scaleAnim so all markers grow in after the overlay disappears
+    // (without this they silently animate to full-size behind the loading screen)
+    markerSetup.markers.forEach(m => { m.userData.scaleAnim = 0; m.visible = false; });
     ui.loading.hide();
     if (globeSetup.ufo) {
       markerSetup.addUfoMarker(globeSetup.ufo, stickerData[ufoIndex], ufoIndex);
@@ -217,7 +220,7 @@ async function init() {
     }
 
     sceneSetup.updateCamera();
-    markerSetup.updateScales(sceneSetup.orbit.radius);
+    markerSetup.updateScales(sceneSetup.orbit.radius, dt);
     markerSetup.updateSway(performance.now() / 1000);
     featureSetup.update(now / 1000, dt);
     sceneSetup.render();

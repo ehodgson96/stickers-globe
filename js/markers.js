@@ -41,7 +41,7 @@ export function createMarkers(
     const baseTilt = (Math.random() - 0.5) * 0.5;
     sprite.material.rotation = baseTilt;
     sprite.scale.set(CONFIG.marker.base, CONFIG.marker.base, 1);
-    sprite.userData = { index, sticker, baseTilt, phase: Math.random() * Math.PI * 2 };
+    sprite.userData = { index, sticker, baseTilt, phase: Math.random() * Math.PI * 2, scaleAnim: 0 };
 
     spriteContainer.add(sprite);
     markerGroup.add(spriteContainer);
@@ -135,7 +135,20 @@ export function createMarkers(
   let onMarkerClick = () => {};
 
   // ── updateScales ───────────────────────────────────────────────────────
-  function updateScales(orbitRadius) {
+  function animateMarker(marker, geomVisible, dt, baseScale) {
+    const prev = marker.userData.scaleAnim;
+    if (geomVisible) {
+      marker.visible = true; // always re-show (clustering may have hidden it)
+      marker.userData.scaleAnim = Math.min(1, prev + 8 * dt);
+    } else {
+      marker.userData.scaleAnim = Math.max(0, prev - 8 * dt);
+      if (marker.userData.scaleAnim <= 0) marker.visible = false;
+    }
+    const t = marker.userData.scaleAnim;
+    marker.scale.set(baseScale * t, baseScale * t, 1);
+  }
+
+  function updateScales(orbitRadius, dt = 0) {
     const factor = orbitRadius / CONFIG.marker.referenceRadius;
     const s = THREE.MathUtils.clamp(
       CONFIG.marker.base * factor,
@@ -148,23 +161,19 @@ export function createMarkers(
     _camLocal.copy(camera.position).applyMatrix4(_invGlobe);
 
     // ── Visibility & scale ───────────────────────────────────────────────
-    // For a unit-sphere globe the geometric horizon from the camera is where
-    //   dot(surfacePoint, cameraLocal) = 1.0   (exact, regardless of orbit radius)
-    // Using 1.05 gives a small buffer so horizon-edge markers don't bleed
-    // through the globe face (depthTest is disabled on sprites).
+    // isUfoMarker excluded: its m.parent is the ufoMesh (not a spriteContainer
+    // in globe-local space), so the dot-product test would give wrong results.
     markers.forEach((m) => {
-      if (m.userData.isMoonMarker) return;
+      if (m.userData.isMoonMarker || m.userData.isUfoMarker) return;
 
       const isSelected = m.userData.index === selectedIndex;
-      m.scale.set(s * (isSelected ? 1.5 : 1.0), s * (isSelected ? 1.5 : 1.0), 1);
       m.renderOrder = isSelected ? 3 : 1;
-      m.visible = m.parent.position.dot(_camLocal) > 1.05;
+      const geomVisible = m.parent.position.dot(_camLocal) > 1.05;
+      animateMarker(m, geomVisible, dt, s * (isSelected ? 1.5 : 1.0));
     });
 
     // Moon marker — ray-sphere occlusion against the globe
     if (moonMarker) {
-      const ms = s * 0.55;
-      moonMarker.scale.set(ms, ms, 1);
       moonMarker.getWorldPosition(_moonWorldPos);
       _camToMoon.copy(_moonWorldPos).sub(camera.position);
       const moonDist = _camToMoon.length();
@@ -172,18 +181,13 @@ export function createMarkers(
       const b = camera.position.dot(_camToMoon);
       const c = camera.position.dot(camera.position) - 1.0;
       const disc = b * b - c;
-      if (disc >= 0) {
-        const tNear = -b - Math.sqrt(disc);
-        moonMarker.visible = !(tNear > 0 && tNear < moonDist);
-      } else {
-        moonMarker.visible = true;
-      }
+      const moonGeomVisible = disc < 0 || !(-b - Math.sqrt(Math.max(0, disc)) > 0 &&
+                                             -b - Math.sqrt(Math.max(0, disc)) < moonDist);
+      animateMarker(moonMarker, moonGeomVisible, dt, s * 0.55);
     }
 
     // UFO marker — same ray-sphere occlusion
     if (ufoMarker) {
-      const us = s * 6;
-      ufoMarker.scale.set(us, us, 1);
       ufoMarker.getWorldPosition(_ufoWorldPos);
       _camToUfo.copy(_ufoWorldPos).sub(camera.position);
       const ufoDist = _camToUfo.length();
@@ -191,12 +195,9 @@ export function createMarkers(
       const bu = camera.position.dot(_camToUfo);
       const cu = camera.position.dot(camera.position) - 1.0;
       const discu = bu * bu - cu;
-      if (discu >= 0) {
-        const tNear = -bu - Math.sqrt(discu);
-        ufoMarker.visible = !(tNear > 0 && tNear < ufoDist);
-      } else {
-        ufoMarker.visible = true;
-      }
+      const ufoGeomVisible = discu < 0 || !(-bu - Math.sqrt(Math.max(0, discu)) > 0 &&
+                                             -bu - Math.sqrt(Math.max(0, discu)) < ufoDist);
+      animateMarker(ufoMarker, ufoGeomVisible, dt, s * 6);
     }
 
     // ── Screen-space clustering ──────────────────────────────────────────
@@ -212,10 +213,11 @@ export function createMarkers(
                    (CONFIG.orbit.maxRadius - CONFIG.orbit.minRadius);
     const THRESH = clusteringEnabled ? Math.max(0, zoomT * clusterThresholdBase) : 0;
 
-    // Collect screen positions for every currently-visible regular marker
+    // Collect screen positions for every fully-visible regular marker.
     const pts = [];
     markers.forEach((m) => {
       if (!m.visible || m.userData.isMoonMarker || m.userData.isUfoMarker) return;
+      if (m.parent.position.dot(_camLocal) <= 1.05) return;
       m.parent.getWorldPosition(_screenPos);
       _screenPos.project(camera);
       pts.push({
@@ -285,7 +287,7 @@ export function createMarkers(
     sprite.renderOrder = 1;
     sprite.scale.set(CONFIG.marker.base * 0.55, CONFIG.marker.base * 0.55, 1);
     sprite.position.set(0, 0.285, 0);
-    sprite.userData = { index, sticker: stickerEntry, isMoonMarker: true, noFly: true, baseTilt: 0, phase: Math.random() * Math.PI * 2 };
+    sprite.userData = { index, sticker: stickerEntry, isMoonMarker: true, noFly: true, baseTilt: 0, phase: Math.random() * Math.PI * 2, scaleAnim: 0 };
     moonMesh.add(sprite);
     moonMarker = sprite;
     markers.push(sprite);
@@ -305,7 +307,7 @@ export function createMarkers(
     sprite.renderOrder = 1;
     sprite.scale.set(CONFIG.marker.base * 6, CONFIG.marker.base * 6, 1);
     sprite.position.set(0, 1, 0);
-    sprite.userData = { index, sticker: stickerEntry, isUfoMarker: true, noFly: true, baseTilt: 0, phase: Math.random() * Math.PI * 2 };
+    sprite.userData = { index, sticker: stickerEntry, isUfoMarker: true, noFly: true, baseTilt: 0, phase: Math.random() * Math.PI * 2, scaleAnim: 0 };
     ufoMesh.add(sprite);
     ufoMarker = sprite;
     markers.push(sprite);
