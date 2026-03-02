@@ -20,17 +20,25 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
   if (stickerList) {
     stickerData.forEach((sticker, index) => {
       const item = document.createElement('div');
-      item.className = 'sticker-item';
+      const isSecret = sticker.isMoon || sticker.isUfo;
+      item.className = 'sticker-item' + (isSecret ? ' locked' : '');
+      const coords = (sticker.lat != null && sticker.lng != null)
+        ? `${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°`
+        : 'Location classified';
+      const displayTitle = isSecret ? '???' : sticker.title;
       item.innerHTML = `
         <div class="sticker-row">
-          <div class="sticker-title">${sticker.title}</div>
+          <div class="sticker-title">${displayTitle}</div>
         </div>
         <div class="sticker-row">
           <div class="sticker-date">${sticker.date}</div>
         </div>
-        <div class="sticker-coords">${sticker.lat.toFixed(4)}°, ${sticker.lng.toFixed(4)}°</div>
+        <div class="sticker-coords">${coords}</div>
       `;
-      item.addEventListener('click', () => onSidebarClick(index));
+      item.addEventListener('click', () => {
+        if (item.classList.contains('locked')) return;
+        onSidebarClick(index);
+      });
       stickerList.appendChild(item);
     });
   }
@@ -47,6 +55,14 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
     },
     onClick: (callback) => {
       onSidebarClick = callback;
+    },
+    reveal: (index) => {
+      const items = document.querySelectorAll('.sticker-item');
+      const item = items[index];
+      if (!item || !item.classList.contains('locked')) return;
+      item.classList.remove('locked');
+      const titleEl = item.querySelector('.sticker-title');
+      if (titleEl) titleEl.textContent = stickerData[index].title;
     }
   };
 
@@ -71,7 +87,9 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
       if (popoutDate) popoutDate.textContent = s.date || '';
       if (popoutLikes) popoutLikes.textContent = s.likeCount ? `${s.likeCount} likes` : '';
       if (popoutCoords) {
-        popoutCoords.textContent = `${Number(s.lat).toFixed(4)}°, ${Number(s.lng).toFixed(4)}°`;
+        popoutCoords.textContent = (s.lat != null && s.lng != null)
+          ? `${Number(s.lat).toFixed(4)}°, ${Number(s.lng).toFixed(4)}°`
+          : 'Location classified';
       }
       if (popoutLink) popoutLink.href = s.link || '#';
       if (popoutImage) {
@@ -145,71 +163,74 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
     return `${Number(value).toFixed(Math.min(decimals, 3))}`;
   }
 
+  function buildCard(item) {
+    const card = document.createElement('section');
+    card.className = 'effect-card';
+
+    const head = document.createElement('div');
+    head.className = 'effect-head';
+    head.innerHTML = `<span>${item.label}</span>`;
+
+    const wrap = document.createElement('label');
+    const toggle = document.createElement('input');
+    toggle.type = 'checkbox';
+    toggle.checked = item.getEnabled();
+    toggle.addEventListener('change', () => item.setEnabled(toggle.checked));
+    wrap.append(toggle, document.createTextNode('ON'));
+    head.appendChild(wrap);
+    card.appendChild(head);
+
+    const controlList = document.createElement('div');
+    controlList.className = 'effect-controls';
+
+    item.controls.forEach((control) => {
+      const row = document.createElement('div');
+      row.className = 'effect-control';
+
+      if (control.type === 'boolean') {
+        const label = document.createElement('span');
+        label.textContent = control.label;
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = Boolean(control.get());
+        checkbox.addEventListener('change', () => control.set(checkbox.checked));
+        row.append(label, checkbox);
+      } else {
+        const label = document.createElement('span');
+        label.textContent = control.label;
+        const value = document.createElement('span');
+        value.className = 'effect-control-value';
+
+        const input = document.createElement('input');
+        input.type = 'range';
+        input.min = `${control.min}`;
+        input.max = `${control.max}`;
+        input.step = `${control.step}`;
+        input.value = `${control.get()}`;
+
+        const updateValue = () => {
+          const next = Number(input.value);
+          control.set(next);
+          value.textContent = formatValue(next, control.step);
+        };
+
+        value.textContent = formatValue(Number(input.value), control.step);
+        input.addEventListener('input', updateValue);
+        row.append(label, value, input);
+      }
+
+      controlList.appendChild(row);
+    });
+
+    card.appendChild(controlList);
+    return card;
+  }
+
   function buildSettingsControls() {
     if (!settingsEffects || !sceneSetup?.postProcessing?.effects) return;
     settingsEffects.innerHTML = '';
-
     sceneSetup.postProcessing.effects.forEach((effect) => {
-      const effectCard = document.createElement('section');
-      effectCard.className = 'effect-card';
-
-      const effectHead = document.createElement('div');
-      effectHead.className = 'effect-head';
-      effectHead.innerHTML = `<span>${effect.label}</span>`;
-
-      const enabledWrap = document.createElement('label');
-      const enabledToggle = document.createElement('input');
-      enabledToggle.type = 'checkbox';
-      enabledToggle.checked = effect.getEnabled();
-      enabledToggle.addEventListener('change', () => effect.setEnabled(enabledToggle.checked));
-      enabledWrap.append(enabledToggle, document.createTextNode('ON'));
-      effectHead.appendChild(enabledWrap);
-      effectCard.appendChild(effectHead);
-
-      const controlList = document.createElement('div');
-      controlList.className = 'effect-controls';
-
-      effect.controls.forEach((control) => {
-        const row = document.createElement('div');
-        row.className = 'effect-control';
-
-        if (control.type === 'boolean') {
-          const label = document.createElement('span');
-          label.textContent = control.label;
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.checked = Boolean(control.get());
-          checkbox.addEventListener('change', () => control.set(checkbox.checked));
-          row.append(label, checkbox);
-        } else {
-          const label = document.createElement('span');
-          label.textContent = control.label;
-          const value = document.createElement('span');
-          value.className = 'effect-control-value';
-
-          const input = document.createElement('input');
-          input.type = 'range';
-          input.min = `${control.min}`;
-          input.max = `${control.max}`;
-          input.step = `${control.step}`;
-          input.value = `${control.get()}`;
-
-          const updateValue = () => {
-            const next = Number(input.value);
-            control.set(next);
-            value.textContent = formatValue(next, control.step);
-          };
-
-          value.textContent = formatValue(Number(input.value), control.step);
-          input.addEventListener('input', updateValue);
-          row.append(label, value, input);
-        }
-
-        controlList.appendChild(row);
-      });
-
-      effectCard.appendChild(controlList);
-      settingsEffects.appendChild(effectCard);
+      settingsEffects.appendChild(buildCard(effect));
     });
   }
 
@@ -244,7 +265,17 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
       if (!fpsCounter) return;
       fpsCounter.textContent = `${Math.max(0, Math.round(fps))}`;
     },
-    isOpen: () => settingsOpen
+    isOpen: () => settingsOpen,
+    addFeatures: (list) => {
+      if (!settingsEffects || !list || list.length === 0) return;
+      const sep = document.createElement('div');
+      sep.className = 'settings-section-sep';
+      sep.textContent = 'Scene Features';
+      settingsEffects.appendChild(sep);
+      list.forEach((feature) => {
+        settingsEffects.appendChild(buildCard(feature));
+      });
+    }
   };
 
   // Mobile UI hint
@@ -270,6 +301,16 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
       e.stopPropagation();
       controls.classList.remove('minimised');
       toggleBtn.setAttribute('aria-expanded', 'true');
+    });
+  }
+
+  // Sidebar toggle
+  const sidebarToggleBtn = document.getElementById('sidebar-toggle');
+  const sidebarEl = document.querySelector('.sidebar');
+  if (sidebarToggleBtn && sidebarEl) {
+    sidebarToggleBtn.addEventListener('click', () => {
+      const collapsed = sidebarEl.classList.toggle('collapsed');
+      sidebarToggleBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     });
   }
 

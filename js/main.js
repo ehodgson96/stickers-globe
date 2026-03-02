@@ -2,6 +2,7 @@ import { CONFIG } from "./config.js";
 import { createScene } from "./scene.js";
 import { createGlobe } from "./globe.js";
 import { createMarkers } from "./markers.js";
+import { createFeatures } from "./features.js";
 import { createUI } from "./ui.js";
 import { vectorToAngles, animateOrbit } from "./utils.js";
 import * as THREE from 'three';
@@ -20,6 +21,24 @@ async function init() {
     console.error("Error loading stickers:", error);
   }
 
+  // Special markers — added before UI/markers so they appear in the sidebar
+  stickerData.push({
+    title: 'UFO',
+    date: '???',
+    link: 'https://www.shroomsquad.co.uk',
+    imageUrl: 'UFOSticker.png',
+    likeCount: '∞',
+    isUfo: true
+  });
+  stickerData.push({
+    title: 'The Moon',
+    date: '???',
+    link: 'https://www.shroomsquad.co.uk',
+    imageUrl: 'MoonSticker.png',
+    likeCount: '∞',
+    isMoon: true
+  });
+
   // Setup loading manager
   const loadingManager = new THREE.LoadingManager();
   const textureLoader = new THREE.TextureLoader(loadingManager);
@@ -36,7 +55,6 @@ async function init() {
   );
 
   loadingManager.onStart = () => ui.loading.show();
-  loadingManager.onLoad = () => ui.loading.hide();
   loadingManager.onError = (url) => console.error(`Error loading ${url}`);
 
   // Create globe and markers
@@ -49,14 +67,50 @@ async function init() {
     sceneSetup.camera,
     container
   );
+
+  const moonIndex = stickerData.length - 1;
+  const ufoIndex = stickerData.length - 2;
+
+  markerSetup.addMoonMarker(
+    globeSetup.celestial.moon.mesh,
+    stickerData[moonIndex],
+    moonIndex
+  );
+
+  const featureSetup = createFeatures({
+    scene:      sceneSetup.scene,
+    globe:      globeSetup.globe,
+    globeSetup
+  });
+  ui.settings.addFeatures([markerSetup.markerFeature, ...featureSetup.features]);
+
+  // UFO GLTF is async — add its marker once everything has loaded
+  loadingManager.onLoad = () => {
+    // Reset scaleAnim so all markers grow in after the overlay disappears
+    // (without this they silently animate to full-size behind the loading screen)
+    markerSetup.markers.forEach(m => { m.userData.scaleAnim = 0; m.visible = false; });
+    ui.loading.hide();
+    if (globeSetup.ufo) {
+      markerSetup.addUfoMarker(globeSetup.ufo, stickerData[ufoIndex], ufoIndex);
+    }
+  };
   setupControls(container, sceneSetup, markerSetup, ui);
 
   // Selection logic
   let currentAnimation = null;
 
   function selectSticker(index) {
+    ui.sidebar.reveal(index);
     ui.sidebar.setActive(index);
     markerSetup.highlightMarker(index);
+    featureSetup.onSelect(index);
+
+    // Moon marker (and any future noFly markers): show popout, skip camera fly
+    const marker = markerSetup.markers[index];
+    if (marker && marker.userData.noFly) {
+      ui.popout.show(index);
+      return;
+    }
 
     const markerContainer = markerSetup.markerGroup.children[index];
     const worldPos = new THREE.Vector3();
@@ -90,7 +144,16 @@ async function init() {
     });
   }
 
+  function deselectSticker() {
+    if (currentAnimation) currentAnimation.cancel = true;
+    sceneSetup.orbit.lockedMarker = null;
+    markerSetup.highlightMarker(null);
+    ui.sidebar.setActive(null);
+    ui.popout.hide();
+  }
+
   markerSetup.onSelect((index) => {
+    if (index === null) { deselectSticker(); return; }
     selectSticker(index);
     ui.sidebar.scrollTo(index);
   });
@@ -101,11 +164,14 @@ async function init() {
   let fpsFrames = 0;
   let fpsTimeAnchor = performance.now();
   let fpsLastSample = fpsTimeAnchor;
+  let prevTime = performance.now();
 
   function animate() {
     requestAnimationFrame(animate);
 
     const now = performance.now();
+    const dt = Math.min((now - prevTime) / 1000, 0.1); // seconds, capped at 100 ms
+    prevTime = now;
     fpsFrames += 1;
     if (now - fpsLastSample >= 250) {
       const elapsed = now - fpsTimeAnchor;
@@ -117,6 +183,7 @@ async function init() {
     }
 
     globeSetup.rotate(0.0005);
+    globeSetup.sun.update();
     globeSetup.celestial.moon.update();
     globeSetup.celestial.mars.update();
     globeSetup.updateOrbitingModels();
@@ -154,7 +221,9 @@ async function init() {
     }
 
     sceneSetup.updateCamera();
-    markerSetup.updateScales(sceneSetup.orbit.radius);
+    markerSetup.updateScales(sceneSetup.orbit.radius, dt);
+    markerSetup.updateSway(performance.now() / 1000);
+    featureSetup.update(now / 1000, dt);
     sceneSetup.render();
   }
 
@@ -191,10 +260,11 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
 
   // Mouse
   container.addEventListener("mousedown", (e) => {
-    if (isFrom(e.target, '#sticker-popout')) return; 
-    if (isFrom(e.target, '.controls')) return; 
+    if (isFrom(e.target, '#sticker-popout')) return;
+    if (isFrom(e.target, '.controls')) return;
     if (isFrom(e.target, '#settings-panel')) return;
     if (isFrom(e.target, '#settings-cog')) return;
+    if (isFrom(e.target, '#sidebar-toggle')) return;
     onDragStart();
     previousPos = { x: e.clientX, y: e.clientY };
     lastMoveTime = performance.now();
@@ -234,10 +304,11 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   }
 
   container.addEventListener("touchstart", (e) => {
-    if (isFrom(e.target, '#sticker-popout')) return; 
-    if (isFrom(e.target, '.controls')) return; 
+    if (isFrom(e.target, '#sticker-popout')) return;
+    if (isFrom(e.target, '.controls')) return;
     if (isFrom(e.target, '#settings-panel')) return;
     if (isFrom(e.target, '#settings-cog')) return;
+    if (isFrom(e.target, '#sidebar-toggle')) return;
     if (e.touches.length === 1) {
       onDragStart();
       previousPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };

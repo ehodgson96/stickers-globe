@@ -23,7 +23,7 @@ export function createScene(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setClearColor(0x0a0a0a);
+  renderer.setClearColor(0x000000);
   container.appendChild(renderer.domElement);
 
   const composer = new EffectComposer(renderer);
@@ -338,29 +338,67 @@ export function createScene(container) {
   scene.add(starfield);
 
   function createStarfield() {
-    const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    for (let i = 0; i < 2000; i++) {
-      const x = Math.random() * canvas.width;
-      const y = Math.random() * canvas.height;
-      const b = Math.random();
-      ctx.fillStyle = `rgba(255,255,255,${b})`;
-      ctx.fillRect(x, y, b * 1.5, b * 1.5);
+    // Soft radial glow used as the sprite for every star
+    const spriteCanvas = document.createElement('canvas');
+    spriteCanvas.width = 32;
+    spriteCanvas.height = 32;
+    const sCtx = spriteCanvas.getContext('2d');
+    const grad = sCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    grad.addColorStop(0,    'rgba(255,255,255,1)');
+    grad.addColorStop(0.35, 'rgba(255,255,255,0.7)');
+    grad.addColorStop(1,    'rgba(255,255,255,0)');
+    sCtx.fillStyle = grad;
+    sCtx.fillRect(0, 0, 32, 32);
+    const starTexture = new THREE.CanvasTexture(spriteCanvas);
+
+    // Positions distributed uniformly on a sphere surface.
+    // Using phi = acos(2u-1) avoids the polar clustering you get from
+    // phi = random() * PI — which is what caused the top/bottom distortion
+    // in the old equirectangular-texture approach.
+    const count = 8000;
+    const positions = new Float32Array(count * 3);
+    const colors    = new Float32Array(count * 3);
+
+    for (let i = 0; i < count; i++) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi   = Math.acos(2 * Math.random() - 1);
+      const r     = 90;
+
+      positions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = r * Math.cos(phi);
+      positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+
+      // Mostly white stars; occasional blue-white (hot) or warm yellow (cool)
+      const brightness = 0.35 + Math.random() * 0.65;
+      const roll = Math.random();
+      if (roll < 0.68) {
+        // white
+        colors[i * 3] = brightness; colors[i * 3 + 1] = brightness; colors[i * 3 + 2] = brightness;
+      } else if (roll < 0.87) {
+        // blue-white
+        colors[i * 3] = brightness * 0.72; colors[i * 3 + 1] = brightness * 0.85; colors[i * 3 + 2] = brightness;
+      } else {
+        // warm yellow-orange
+        colors[i * 3] = brightness; colors[i * 3 + 1] = brightness * 0.82; colors[i * 3 + 2] = brightness * 0.55;
+      }
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
-    const geometry = new THREE.SphereGeometry(100, 64, 64);
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      side: THREE.BackSide
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setAttribute('color',    new THREE.BufferAttribute(colors,    3));
+
+    const material = new THREE.PointsMaterial({
+      size:            1.8,
+      map:             starTexture,
+      vertexColors:    true,
+      transparent:     true,
+      depthWrite:      false,
+      sizeAttenuation: false,
+      alphaTest:       0.01,
+      blending:        THREE.AdditiveBlending
     });
 
-    return new THREE.Mesh(geometry, material);
+    return new THREE.Points(geometry, material);
   }
 
   function handleResize() {
@@ -373,7 +411,7 @@ export function createScene(container) {
     outlinePass.resolution.set(container.clientWidth, container.clientHeight);
   }
 
-  window.addEventListener('resize', handleResize);
+  new ResizeObserver(handleResize).observe(container);
 
   const postProcessing = {
     effects: effects.map((effect) => ({
