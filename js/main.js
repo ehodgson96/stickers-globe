@@ -140,7 +140,16 @@ async function init() {
     });
   }
 
+  function deselectSticker() {
+    if (currentAnimation) currentAnimation.cancel = true;
+    sceneSetup.orbit.lockedMarker = null;
+    markerSetup.highlightMarker(null);
+    ui.sidebar.setActive(null);
+    ui.popout.hide();
+  }
+
   markerSetup.onSelect((index) => {
+    if (index === null) { deselectSticker(); return; }
     selectSticker(index);
     ui.sidebar.scrollTo(index);
   });

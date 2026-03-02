@@ -90,7 +90,7 @@ export function createMarkers(
     sprite.center.set(0.5, 0);
     sprite.renderOrder = 2;
     sprite.visible = false;
-    sprite.userData.isCluster = true;
+    sprite.userData = { isCluster: true, baseTilt: 0, phase: Math.random() * Math.PI * 2 };
     clusterGroup.add(sprite);
     clusterPool.push(sprite);
     return sprite;
@@ -118,7 +118,7 @@ export function createMarkers(
     if (isDragging || isFromPopout(e) || isFromSettings(e)) return;
     const rect  = container.getBoundingClientRect();
     const index = handleSelection(e.clientX, e.clientY, rect);
-    if (index !== null) onMarkerClick(index);
+    onMarkerClick(index);
   });
 
   container.addEventListener('touchstart', () => { touchStartTime = Date.now(); });
@@ -129,7 +129,7 @@ export function createMarkers(
     const rect  = container.getBoundingClientRect();
     const touch = e.changedTouches[0];
     const index = handleSelection(touch.clientX, touch.clientY, rect);
-    if (index !== null) onMarkerClick(index);
+    onMarkerClick(index);
   });
 
   let onMarkerClick = () => {};
@@ -244,7 +244,8 @@ export function createMarkers(
       members.forEach(p => centroid.add(p.marker.parent.position));
       centroid.normalize().multiplyScalar(1.001); // just above surface
 
-      activeClusters.push({ centroid, count: members.length });
+      const containsSelected = members.some(p => p.marker.userData.index === selectedIndex);
+      activeClusters.push({ centroid, count: members.length, containsSelected });
     });
 
     // Hide individual markers that were merged
@@ -254,7 +255,10 @@ export function createMarkers(
     activeClusters.forEach((cl, i) => {
       const cs = getClusterSprite(i);
       cs.position.copy(cl.centroid);
-      cs.scale.set(s * clusterScaleMult, s * clusterScaleMult, 1);
+      const cs_s = s * clusterScaleMult * (cl.containsSelected ? 1.5 : 1.0);
+      cs.scale.set(cs_s, cs_s, 1);
+      cs.material.color.setHex(cl.containsSelected ? 0xe74c3c : 0xffffff);
+      cs.renderOrder = cl.containsSelected ? 3 : 2;
       cs.visible = true;
     });
   }
@@ -273,7 +277,8 @@ export function createMarkers(
         map: pointerTexture,
         sizeAttenuation: false,
         depthTest: false,
-        transparent: true
+        transparent: true,
+        opacity: 0.2
       })
     );
     sprite.center.set(0.5, 0);
@@ -292,7 +297,8 @@ export function createMarkers(
         map: pointerTexture,
         sizeAttenuation: false,
         depthTest: false,
-        transparent: true
+        transparent: true,
+        opacity: 0.2
       })
     );
     sprite.center.set(0.5, 0);
@@ -310,6 +316,11 @@ export function createMarkers(
       const { baseTilt, phase } = m.userData;
       if (baseTilt === undefined) return;
       m.material.rotation = baseTilt + Math.sin(time * 1.5 + phase) * 0.08;
+    });
+    clusterPool.forEach((cs) => {
+      if (!cs.visible) return;
+      const { phase } = cs.userData;
+      cs.material.rotation = Math.sin(time * 1.5 + phase) * 0.08;
     });
   }
 
