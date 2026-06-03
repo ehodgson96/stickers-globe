@@ -265,6 +265,7 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
     if (isFrom(e.target, '#settings-panel')) return;
     if (isFrom(e.target, '#settings-cog')) return;
     if (isFrom(e.target, '#sidebar-toggle')) return;
+    if (isFrom(e.target, '#about-btn')) return;
     onDragStart();
     previousPos = { x: e.clientX, y: e.clientY };
     lastMoveTime = performance.now();
@@ -309,6 +310,7 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
     if (isFrom(e.target, '#settings-panel')) return;
     if (isFrom(e.target, '#settings-cog')) return;
     if (isFrom(e.target, '#sidebar-toggle')) return;
+    if (isFrom(e.target, '#about-btn')) return;
     if (e.touches.length === 1) {
       onDragStart();
       previousPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };

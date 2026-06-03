@@ -97,6 +97,13 @@
           </svg>
         </button>
         <button
+          id="about-btn"
+          class="about-btn"
+          type="button"
+          aria-label="About ShroomSquad"
+          title="About ShroomSquad"
+        >[ ? ]</button>
+        <button
           id="settings-cog"
           class="settings-cog"
           type="button"
@@ -163,6 +170,56 @@
         </div>
         <div class="sticker-count" id="sticker-count"></div>
         <div id="sticker-list"></div>
+      </div>
+    </div>
+
+    <!-- About overlay modal -->
+    <div id="about-overlay" class="about-overlay hidden" role="dialog" aria-label="About ShroomSquad" aria-hidden="true">
+      <div class="about-panel">
+        <div class="about-header">
+          <span>// ABOUT //</span>
+          <button id="about-close" type="button" aria-label="Close about">✕</button>
+        </div>
+        <div class="about-scroll">
+          <!--
+            GROUP PHOTO PLACEHOLDER
+            Place your crew photo at: assets/materials/crew.jpg
+            Recommended size: 800×600px or 4:3 ratio
+          -->
+          <div class="about-photo-wrap">
+            <img
+              id="about-photo"
+              src="./assets/materials/crew.jpg"
+              alt="ShroomSquad crew"
+              class="about-photo"
+              onerror="this.style.display='none';document.getElementById('about-photo-placeholder').style.display='flex'"
+            />
+            <div id="about-photo-placeholder" class="about-photo-placeholder">
+              <span class="about-placeholder-icon">[ 📸 ]</span>
+              <span>CREW PHOTO</span>
+              <span class="about-photo-hint">// add assets/materials/crew.jpg //</span>
+            </div>
+          </div>
+          <div class="about-text">
+            <p class="about-squad-name">SHROOM SQUAD</p>
+            <div class="about-rule"></div>
+            <p>A crew of friends united by graffiti, travel, and stickers.</p>
+            <p>We make custom mushroom stickers and plant them in interesting places around the world — cities, beaches, temples, train stations, back alleys.</p>
+            <div class="about-rule"></div>
+            <p>This globe maps every verified drop we've found.</p>
+            <p>Spin it. Zoom in. Find the secrets.</p>
+            <div class="about-rule"></div>
+            <div class="about-meta">
+              <span class="about-stat" id="about-sticker-count">[ ?? DROPS LOGGED ]</span>
+              <span class="about-stat">[ STILL GROWING ]</span>
+            </div>
+            <div class="about-rule"></div>
+            <div class="about-links">
+              <a href="https://www.instagram.com/shroomsquad.co.uk/" target="_blank" rel="noopener" class="about-link">INSTAGRAM ↗</a>
+              <a href="https://www.shroomsquad.co.uk" target="_blank" rel="noopener" class="about-link">WEBSITE ↗</a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
