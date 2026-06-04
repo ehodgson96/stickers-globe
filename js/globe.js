@@ -170,6 +170,8 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
 
   // Orbiting models
   let ufoModel = null;
+  const namedModels = {};
+  let gameMode = false;
 
   gltfLoader.load('./assets/models/UFO.glb', (gltf) => {
     const model = gltf.scene;
@@ -191,10 +193,11 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
       }
     });
     ufoModel = model;
+    namedModels.ufo = model;
   });
 
   const models = [
-    { path: './assets/models/Cow.glb', radius: 1.1, speed: 0.0008, scale: [0.01, 0.01, 0.01], tilt: 15, zSpin: true, ySpin: true },
+    { name: 'cow', path: './assets/models/Cow.glb', radius: 1.1, speed: 0.0008, scale: [0.01, 0.01, 0.01], tilt: 15, zSpin: true, ySpin: true },
     { path: './assets/models/Rocket.glb', radius: 1.8, speed: -0.0006, scale: [0.002, 0.002, 0.002], tilt: 30, zSpin: true },
     { path: './assets/models/Satellite.glb', radius: 1.4, speed: 0.0002, scale: [0.003, 0.003, 0.003], tilt: 5, zSpin: true },
     { path: './assets/models/Satellite.glb', radius: 1.3, speed: -0.0005, scale: [0.003, 0.003, 0.003], tilt: 28, zSpin: true, ySpin: true },
@@ -226,10 +229,13 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
           }
         }
       });
+
+      if (opts.name) namedModels[opts.name] = model;
     });
   });
 
   function updateOrbitingModels() {
+    if (gameMode) return;
     globe.traverse(obj => {
       if (obj.userData.orbit) {
         const o = obj.userData.orbit;
@@ -262,6 +268,8 @@ export function createGlobe(scene, textureLoader, gltfLoader) {
     sunGlow,
     updateOrbitingModels,
     rotate: (delta) => globe.rotation.y += delta,
-    get ufo() { return ufoModel; }
+    get ufo() { return ufoModel; },
+    getNamedModel: (name) => namedModels[name],
+    setGameMode: (on) => { gameMode = Boolean(on); }
   };
 }

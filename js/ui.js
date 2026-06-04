@@ -103,6 +103,8 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
   const popoutLink = document.getElementById('popout-link');
   let currentIndex = null;
 
+  const gameBtn = document.getElementById('popout-game-btn');
+
   const popoutUI = {
     show: (index) => {
       if (!popout) return;
@@ -123,6 +125,7 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
         popoutImage.src = './assets/stickers/' + (s.imageUrl || '');
         popoutImage.alt = s.title || 'Sticker photo';
       }
+      if (gameBtn) gameBtn.classList.toggle('hidden', !s.isUfo);
 
       popout.classList.remove('hidden');
       requestAnimationFrame(() => popout.classList.add('open'));
@@ -413,5 +416,5 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
     }
   });
 
-  return { loading, sidebar, popout: popoutUI, settings };
+  return { loading, sidebar, popout: popoutUI, settings, gameBtn };
 }

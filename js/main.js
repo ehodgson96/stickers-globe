@@ -4,7 +4,9 @@ import { createGlobe } from "./globe.js";
 import { createMarkers } from "./markers.js";
 import { createFeatures } from "./features.js";
 import { createUI } from "./ui.js";
-import { vectorToAngles, animateOrbit } from "./utils.js";
+import { createAudio } from "./audio.js";
+import { createMinigame } from "./minigame.js";
+import { vectorToAngles, animateOrbit, shortestAngleDelta } from "./utils.js";
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
@@ -84,17 +86,158 @@ async function init() {
   });
   ui.settings.addFeatures([markerSetup.markerFeature, ...featureSetup.features]);
 
+  // Audio
+  const audio = createAudio();
+  const soundToggleBtn = document.getElementById('sound-toggle');
+  soundToggleBtn?.addEventListener('click', () => {
+    const on = audio.toggle();
+    soundToggleBtn.classList.toggle('active', on);
+  });
+
+  // Mini-game
+  const minigame = createMinigame({
+    globe: globeSetup.globe,
+    getUfo: () => globeSetup.ufo,
+    getCow: () => globeSetup.getNamedModel('cow'),
+    audio
+  });
+
+  let preGameRadius = CONFIG.orbit.radius;
+
+  const _sidebarEl  = document.querySelector('.sidebar');
+  const _sidebarBtn = document.getElementById('sidebar-toggle');
+
+  function setGameUI(gameActive) {
+    markerSetup.setVisible(!gameActive);
+    if (gameActive) {
+      _sidebarEl?.classList.add('collapsed');
+      _sidebarBtn?.setAttribute('aria-expanded', 'false');
+    } else {
+      _sidebarEl?.classList.remove('collapsed');
+      _sidebarBtn?.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  ui.gameBtn?.addEventListener('click', () => {
+    ui.popout.hide();
+    preGameRadius = sceneSetup.orbit.radius;
+    sceneSetup.orbit.radius = 4.5;
+    globeSetup.setGameMode(true);
+    setGameUI(true);
+    minigame.start();
+  });
+
+  // Re-enable game mode when player hits "PLAY AGAIN" (minigame.js calls start() directly)
+  document.getElementById('mg-restart')?.addEventListener('click', () => {
+    globeSetup.setGameMode(true);
+    sceneSetup.orbit.radius = 4.5;
+    setGameUI(true);
+  });
+
+  // Restore normal orbit when game ends (timer or ESC)
+  minigame.onEnd(() => {
+    globeSetup.setGameMode(false);
+    sceneSetup.orbit.radius = preGameRadius;
+    setGameUI(false);
+  });
+  const _origStop = minigame.stop;
+  minigame.stop = function() {
+    _origStop();
+    globeSetup.setGameMode(false);
+    sceneSetup.orbit.radius = preGameRadius;
+    setGameUI(false);
+  };
+
   // UFO GLTF is async — add its marker once everything has loaded
   loadingManager.onLoad = () => {
     // Reset scaleAnim so all markers grow in after the overlay disappears
-    // (without this they silently animate to full-size behind the loading screen)
     markerSetup.markers.forEach(m => { m.userData.scaleAnim = 0; m.visible = false; });
     ui.loading.hide();
     if (globeSetup.ufo) {
       markerSetup.addUfoMarker(globeSetup.ufo, stickerData[ufoIndex], ufoIndex);
     }
   };
-  setupControls(container, sceneSetup, markerSetup, ui);
+  setupControls(container, sceneSetup, markerSetup, ui, minigame);
+
+  // ── Ripple system ────────────────────────────────────────────────────────
+  const rippleRings = [];
+  const MAX_RIPPLES = 3;
+
+  for (let i = 0; i < MAX_RIPPLES; i++) {
+    const mesh = new THREE.Mesh(
+      new THREE.RingGeometry(0.04, 0.05, 32),
+      new THREE.MeshBasicMaterial({
+        color: 0xe74c3c,
+        transparent: true,
+        opacity: 0,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    mesh.visible = false;
+    globeSetup.globe.add(mesh);
+    rippleRings.push({ mesh, active: false, life: 0, normal: new THREE.Vector3() });
+  }
+
+  function triggerRipple(worldPos) {
+    const ring = rippleRings.find(r => !r.active);
+    if (!ring) return;
+    // Convert world pos to globe-local
+    const localPos = globeSetup.globe.worldToLocal(worldPos.clone());
+    ring.normal.copy(localPos).normalize();
+    ring.mesh.position.copy(ring.normal).multiplyScalar(1.005);
+    ring.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), ring.normal);
+    ring.mesh.scale.setScalar(1);
+    ring.mesh.material.opacity = 0.8;
+    ring.mesh.visible = true;
+    ring.active = true;
+    ring.life = 0;
+  }
+
+  function updateRipples(dt) {
+    rippleRings.forEach(r => {
+      if (!r.active) return;
+      r.life += dt;
+      const t = r.life / 1.2;
+      r.mesh.scale.setScalar(1 + t * 3);
+      r.mesh.material.opacity = 0.5 * (1 - t);
+      if (t >= 1) {
+        r.active = false;
+        r.mesh.visible = false;
+      }
+    });
+  }
+
+  // ── Tooltip ──────────────────────────────────────────────────────────────
+  const tooltip = document.getElementById('marker-tooltip');
+  let _lastHoverIndex = null;
+
+  container.addEventListener('mousemove', (e) => {
+    if (minigame.isActive()) return;
+    const rect = container.getBoundingClientRect();
+    const idx = markerSetup.getHovered(e.clientX, e.clientY, rect);
+    if (idx !== _lastHoverIndex) {
+      _lastHoverIndex = idx;
+      if (idx !== null && tooltip) {
+        const s = stickerData[idx];
+        tooltip.textContent = s?.title || 'Sticker';
+        tooltip.style.left = `${e.clientX - rect.left}px`;
+        tooltip.style.top = `${e.clientY - rect.top}px`;
+        tooltip.classList.remove('hidden');
+      } else {
+        tooltip?.classList.add('hidden');
+      }
+    } else if (idx !== null && tooltip) {
+      tooltip.style.left = `${e.clientX - rect.left}px`;
+      tooltip.style.top = `${e.clientY - rect.top}px`;
+    }
+  });
+
+  container.addEventListener('mouseleave', () => {
+    _lastHoverIndex = null;
+    tooltip?.classList.add('hidden');
+  });
 
   // Selection logic
   let currentAnimation = null;
@@ -104,6 +247,13 @@ async function init() {
     ui.sidebar.setActive(index);
     markerSetup.highlightMarker(index);
     featureSetup.onSelect(index);
+
+    const s = stickerData[index];
+    if (s?.isMoon || s?.isUfo) {
+      audio.playSecret();
+    } else {
+      audio.playSelect();
+    }
 
     // Moon marker (and any future noFly markers): show popout, skip camera fly
     const marker = markerSetup.markers[index];
@@ -115,6 +265,8 @@ async function init() {
     const markerContainer = markerSetup.markerGroup.children[index];
     const worldPos = new THREE.Vector3();
     markerContainer.getWorldPosition(worldPos);
+
+    triggerRipple(worldPos);
 
     const { theta: targetTheta, phi: targetPhiRaw } = vectorToAngles(worldPos);
     const targetPhi = THREE.MathUtils.clamp(
@@ -182,11 +334,30 @@ async function init() {
       fpsLastSample = now;
     }
 
-    globeSetup.rotate(0.0005);
+    if (!minigame.isActive()) {
+      globeSetup.rotate(0.0005);
+    }
     globeSetup.sun.update();
     globeSetup.celestial.moon.update();
     globeSetup.celestial.mars.update();
     globeSetup.updateOrbitingModels();
+
+    minigame.update(dt);
+    updateRipples(dt);
+
+    // Camera lerps toward UFO during mini-game
+    if (minigame.isActive()) {
+      const ufo = globeSetup.ufo;
+      if (ufo) {
+        const ufoWorld = new THREE.Vector3();
+        ufo.getWorldPosition(ufoWorld);
+        const { theta: tgtTheta, phi: tgtPhi } = vectorToAngles(ufoWorld);
+        const clampedPhi = THREE.MathUtils.clamp(tgtPhi, sceneSetup.orbit.minPhi, sceneSetup.orbit.maxPhi);
+        const t = 1 - Math.pow(0.15, dt); // ~85% closed per second — cinematic lag
+        sceneSetup.orbit.theta += shortestAngleDelta(sceneSetup.orbit.theta, tgtTheta) * t;
+        sceneSetup.orbit.phi   += (clampedPhi - sceneSetup.orbit.phi) * t;
+      }
+    }
 
     // Track locked marker
     if (sceneSetup.orbit.lockedMarker) {
@@ -230,7 +401,7 @@ async function init() {
   animate();
 }
 
-function setupControls(container, sceneSetup, markerSetup, ui) {
+function setupControls(container, sceneSetup, markerSetup, ui, minigame) {
   let isDragging = false;
   let previousPos = { x: 0, y: 0 };
   let lastMoveTime = 0;
@@ -260,12 +431,14 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
 
   // Mouse
   container.addEventListener("mousedown", (e) => {
+    if (minigame.isActive()) return;
     if (isFrom(e.target, '#sticker-popout')) return;
     if (isFrom(e.target, '.controls')) return;
     if (isFrom(e.target, '#settings-panel')) return;
     if (isFrom(e.target, '#settings-cog')) return;
     if (isFrom(e.target, '#sidebar-toggle')) return;
     if (isFrom(e.target, '#about-btn')) return;
+    if (isFrom(e.target, '#sound-toggle')) return;
     onDragStart();
     previousPos = { x: e.clientX, y: e.clientY };
     lastMoveTime = performance.now();
@@ -305,12 +478,14 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   }
 
   container.addEventListener("touchstart", (e) => {
+    if (minigame.isActive()) return;
     if (isFrom(e.target, '#sticker-popout')) return;
     if (isFrom(e.target, '.controls')) return;
     if (isFrom(e.target, '#settings-panel')) return;
     if (isFrom(e.target, '#settings-cog')) return;
     if (isFrom(e.target, '#sidebar-toggle')) return;
     if (isFrom(e.target, '#about-btn')) return;
+    if (isFrom(e.target, '#sound-toggle')) return;
     if (e.touches.length === 1) {
       onDragStart();
       previousPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -321,8 +496,8 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
   });
 
   container.addEventListener("touchmove", (e) => {
-    if (isFrom(e.target, '#sticker-popout')) return; 
-    if (isFrom(e.target, '.controls')) return; 
+    if (isFrom(e.target, '#sticker-popout')) return;
+    if (isFrom(e.target, '.controls')) return;
     if (isFrom(e.target, '#settings-panel')) return;
     if (isFrom(e.target, '#settings-cog')) return;
     if (e.touches.length === 1 && isDragging) {
@@ -365,7 +540,8 @@ function setupControls(container, sceneSetup, markerSetup, ui) {
 
   // Wheel zoom
   container.addEventListener("wheel",(e) => {
-    if (isFrom(e.target, '#sticker-popout')) return; 
+    if (minigame.isActive()) return;
+    if (isFrom(e.target, '#sticker-popout')) return;
       if (isFrom(e.target, '.controls')) return;
       if (isFrom(e.target, '#settings-panel')) return;
       if (isFrom(e.target, '#settings-cog')) return;

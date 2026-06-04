@@ -104,6 +104,14 @@
           title="About ShroomSquad"
         >[ ? ]</button>
         <button
+          id="sound-toggle"
+          class="sound-toggle"
+          type="button"
+          aria-label="Toggle sound"
+          title="Toggle Sound"
+        >[ ♪ ]</button>
+        <div id="marker-tooltip" class="marker-tooltip hidden"></div>
+        <button
           id="settings-cog"
           class="settings-cog"
           type="button"
@@ -160,6 +168,7 @@
               rel="noopener"
               >Open Instagram ↗</a
             >
+            <button id="popout-game-btn" class="popout-game-btn hidden" type="button">▶ PLAY UFO GAME</button>
           </div>
         </div>
       </div>
@@ -173,6 +182,26 @@
       </div>
     </div>
 
+    <!-- Mini-game HUD -->
+    <div id="mg-hud" class="mg-hud hidden">
+      <div class="mg-stat">SCORE <strong id="mg-score">0</strong></div>
+      <div class="mg-stat">TIME <strong id="mg-time">45</strong></div>
+      <div class="mg-hint">WASD / ARROWS — MOVE &nbsp;|&nbsp; SPACE — BEAM</div>
+    </div>
+
+    <!-- Mini-game over screen -->
+    <div id="mg-gameover" class="mg-gameover hidden">
+      <div class="mg-gameover-panel">
+        <div class="mg-gameover-title">// MISSION COMPLETE //</div>
+        <div class="mg-gameover-sub">COWS ABDUCTED</div>
+        <div class="mg-gameover-score" id="mg-final-score">0</div>
+        <div class="mg-gameover-actions">
+          <button id="mg-restart" class="mg-btn" type="button">[ PLAY AGAIN ]</button>
+          <button id="mg-quit" class="mg-btn" type="button">[ EXIT ]</button>
+        </div>
+      </div>
+    </div>
+
     <!-- About overlay modal -->
     <div id="about-overlay" class="about-overlay hidden" role="dialog" aria-label="About ShroomSquad" aria-hidden="true">
       <div class="about-panel">
@@ -183,13 +212,13 @@
         <div class="about-scroll">
           <!--
             GROUP PHOTO PLACEHOLDER
-            Place your crew photo at: assets/materials/crew.jpg
+            Place your crew photo at: assets/materials/crew.png
             Recommended size: 800×600px or 4:3 ratio
           -->
           <div class="about-photo-wrap">
             <img
               id="about-photo"
-              src="./assets/materials/crew.jpg"
+              src="./assets/materials/crew.png"
               alt="ShroomSquad crew"
               class="about-photo"
               onerror="this.style.display='none';document.getElementById('about-photo-placeholder').style.display='flex'"
@@ -197,16 +226,15 @@
             <div id="about-photo-placeholder" class="about-photo-placeholder">
               <span class="about-placeholder-icon">[ 📸 ]</span>
               <span>CREW PHOTO</span>
-              <span class="about-photo-hint">// add assets/materials/crew.jpg //</span>
+              <span class="about-photo-hint">// add assets/materials/crew.png //</span>
             </div>
           </div>
           <div class="about-text">
             <p class="about-squad-name">SHROOM SQUAD</p>
             <div class="about-rule"></div>
-            <p>A crew of friends united by graffiti, travel, and stickers.</p>
             <p>We make custom mushroom stickers and plant them in interesting places around the world — cities, beaches, temples, train stations, back alleys.</p>
             <div class="about-rule"></div>
-            <p>This globe maps every verified drop we've found.</p>
+            <p>This globe maps every verified spore we've spread.</p>
             <p>Spin it. Zoom in. Find the secrets.</p>
             <div class="about-rule"></div>
             <div class="about-meta">
@@ -216,7 +244,6 @@
             <div class="about-rule"></div>
             <div class="about-links">
               <a href="https://www.instagram.com/shroomsquad.co.uk/" target="_blank" rel="noopener" class="about-link">INSTAGRAM ↗</a>
-              <a href="https://www.shroomsquad.co.uk" target="_blank" rel="noopener" class="about-link">WEBSITE ↗</a>
             </div>
           </div>
         </div>

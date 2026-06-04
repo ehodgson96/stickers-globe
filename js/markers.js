@@ -173,7 +173,7 @@ export function createMarkers(
     });
 
     // Moon marker — ray-sphere occlusion against the globe
-    if (moonMarker) {
+    if (moonMarker && markerGroup.visible) {
       moonMarker.getWorldPosition(_moonWorldPos);
       _camToMoon.copy(_moonWorldPos).sub(camera.position);
       const moonDist = _camToMoon.length();
@@ -187,7 +187,7 @@ export function createMarkers(
     }
 
     // UFO marker — same ray-sphere occlusion
-    if (ufoMarker) {
+    if (ufoMarker && markerGroup.visible) {
       ufoMarker.getWorldPosition(_ufoWorldPos);
       _camToUfo.copy(_ufoWorldPos).sub(camera.position);
       const ufoDist = _camToUfo.length();
@@ -367,6 +367,13 @@ export function createMarkers(
     addMoonMarker,
     addUfoMarker,
     setDragging: (val) => (isDragging = val),
-    onSelect: (callback) => (onMarkerClick = callback)
+    onSelect: (callback) => (onMarkerClick = callback),
+    getHovered: (clientX, clientY, rect) => handleSelection(clientX, clientY, rect),
+    setVisible: (v) => {
+      markerGroup.visible = Boolean(v);
+      clusterGroup.visible = Boolean(v);
+      if (moonMarker) moonMarker.visible = Boolean(v);
+      if (ufoMarker) ufoMarker.visible = Boolean(v);
+    }
   };
 }
