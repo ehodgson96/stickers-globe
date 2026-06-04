@@ -120,9 +120,18 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
           ? `${Number(s.lat).toFixed(4)}°, ${Number(s.lng).toFixed(4)}°`
           : 'Location classified';
       }
-      if (popoutLink) popoutLink.href = s.link || '#';
+      if (popoutLink) {
+        popoutLink.href = s.link || '#';
+        popoutLink.classList.toggle('hidden', !!(s.isMoon || s.isUfo));
+      }
       if (popoutImage) {
-        popoutImage.src = './assets/stickers/' + (s.imageUrl || '');
+        const newSrc = './assets/stickers/' + (s.imageUrl || '');
+        if (popoutImage.src !== newSrc) {
+          popoutImage.style.opacity = '0';
+          popoutImage.onload = () => { popoutImage.style.opacity = '1'; };
+          popoutImage.onerror = () => { popoutImage.style.opacity = '1'; };
+        }
+        popoutImage.src = newSrc;
         popoutImage.alt = s.title || 'Sticker photo';
       }
       if (gameBtn) gameBtn.classList.toggle('hidden', !s.isUfo);

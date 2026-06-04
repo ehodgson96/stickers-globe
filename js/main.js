@@ -251,6 +251,7 @@ async function init() {
     const s = stickerData[index];
     if (s?.isMoon || s?.isUfo) {
       audio.playSecret();
+      markerSetup.revealMarker(index);
     } else {
       audio.playSelect();
     }

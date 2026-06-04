@@ -726,7 +726,7 @@ body {
 }
 
 .popout-image-wrap { width: 100%; aspect-ratio: 1/1; background:#0b0b12; overflow:hidden; }
-.popout-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.popout-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s ease; }
 
 .popout-body { padding: 10px 12px 12px; }
 .popout-title { font-size: 22px; letter-spacing: 2px; margin-bottom: 2px; text-shadow: 0 1px 0 #000; }
@@ -1057,6 +1057,7 @@ body {
 }
 .popout-game-btn:hover { background: rgba(136,255,136,0.08); }
 .popout-game-btn.hidden { display: none; }
+.popout-link.hidden { display: none; }
 
 /* ─── Mobile: Full Overhaul ────────────────────────────────────── */
 @media (max-width: 768px) {
