@@ -37,13 +37,15 @@
       {
         "imports": {
           "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/",
+          "ogl": "https://esm.sh/ogl@1.0.9"
         }
       }
     </script>
   </head>
   <body>
     <div id="loading-overlay">
+      <div id="particles-bg"></div>
       <div class="loading-content">
         <div class="loading-ring">
           <svg class="ring-svg" viewBox="0 0 100 100">
@@ -56,7 +58,7 @@
             class="loading-logo"
           />
         </div>
-        <div class="loading-text">Loading...</div>
+        <div class="loading-text">Welcome!</div>
       </div>
     </div>
     <div class="container">

@@ -6,6 +6,7 @@ import { createFeatures } from "./features.js";
 import { createUI } from "./ui.js";
 import { createAudio } from "./audio.js";
 import { createMinigame } from "./minigame.js";
+import { initParticles } from "./particles-bg.js";
 import { vectorToAngles, animateOrbit, shortestAngleDelta } from "./utils.js";
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
@@ -40,6 +41,22 @@ async function init() {
     likeCount: '∞',
     isMoon: true
   });
+
+  // Start particle background behind the loading overlay
+  const particlesBg = document.getElementById('particles-bg');
+  const particles = particlesBg ? initParticles(particlesBg, {
+    particleCount: 800,
+    particleSpread: 30,
+    speed: 0.1,
+    particleColors: ['#9eefd5', '#ffffff', '#7dd3c8'],
+    moveParticlesOnHover: true,
+    particleHoverFactor: 0.3,
+    alphaParticles: false,
+    particleBaseSize: 100,
+    sizeRandomness: 1,
+    cameraDistance: 20,
+    disableRotation: false,
+  }) : null;
 
   // Setup loading manager
   const loadingManager = new THREE.LoadingManager();
@@ -152,10 +169,14 @@ async function init() {
   loadingManager.onLoad = () => {
     // Reset scaleAnim so all markers grow in after the overlay disappears
     markerSetup.markers.forEach(m => { m.userData.scaleAnim = 0; m.visible = false; });
-    ui.loading.hide();
     if (globeSetup.ufo) {
       markerSetup.addUfoMarker(globeSetup.ufo, stickerData[ufoIndex], ufoIndex);
     }
+    // Hold for 2s, then fade out over 1s, then release the WebGL context
+    setTimeout(() => {
+      ui.loading.hide();
+      setTimeout(() => particles?.destroy(), 1000);
+    }, 1500);
   };
   setupControls(container, sceneSetup, markerSetup, ui, minigame);
 

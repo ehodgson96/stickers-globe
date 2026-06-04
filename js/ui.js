@@ -23,8 +23,10 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
   const loading = {
     show: () => loadingOverlay && (loadingOverlay.style.display = 'flex'),
     hide: () => {
-      if (loadingOverlay) loadingOverlay.style.display = 'none';
       clearInterval(_msgInterval);
+      if (!loadingOverlay) return;
+      loadingOverlay.style.opacity = '0';
+      setTimeout(() => { loadingOverlay.style.display = 'none'; }, 1000);
     }
   };
 
