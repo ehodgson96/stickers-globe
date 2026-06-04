@@ -390,7 +390,7 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
 
   if (aboutStickerCount) {
     const realCount = stickerData.filter((s) => !s.isMoon && !s.isUfo).length;
-    aboutStickerCount.textContent = `[ ${realCount} DROPS LOGGED ]`;
+    aboutStickerCount.textContent = `[ ${realCount} SPORES LOGGED ]`;
   }
 
   function setAboutOpen(isOpen) {

@@ -59,6 +59,98 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
   const hudTime    = document.getElementById('mg-time');
   const gameOverEl = document.getElementById('mg-gameover');
   const finalScore = document.getElementById('mg-final-score');
+  const joystick     = document.getElementById('mg-joystick');
+  const joystickKnob = document.getElementById('mg-joystick-knob');
+  const beamBtn      = document.getElementById('mg-beam-btn');
+
+  // ── Touch joystick state ─────────────────────────────────────────────────
+  const JOYSTICK_TRAVEL = 36; // max knob offset in px
+  let joyId = null;
+  let joyOriginX = 0;
+  let joyOriginY = 0;
+
+  function updateJoy(cx, cy) {
+    const dx = cx - joyOriginX;
+    const dy = cy - joyOriginY;
+    const dist = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx);
+    const travel = Math.min(dist, JOYSTICK_TRAVEL);
+    if (joystickKnob) {
+      joystickKnob.style.transform =
+        `translate(calc(-50% + ${Math.cos(angle) * travel}px), calc(-50% + ${Math.sin(angle) * travel}px))`;
+    }
+    const DEAD = 10;
+    keys.left  = dx < -DEAD;
+    keys.right = dx > DEAD;
+    keys.up    = dy < -DEAD;
+    keys.down  = dy > DEAD;
+  }
+
+  function onJoyStart(e) {
+    e.preventDefault();
+    if (joyId !== null) return;
+    const t = e.changedTouches[0];
+    joyId = t.identifier;
+    const rect = joystick.getBoundingClientRect();
+    joyOriginX = rect.left + rect.width / 2;
+    joyOriginY = rect.top + rect.height / 2;
+    updateJoy(t.clientX, t.clientY);
+  }
+
+  function onJoyMove(e) {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joyId) {
+        updateJoy(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+        return;
+      }
+    }
+  }
+
+  function onJoyEnd(e) {
+    e.preventDefault();
+    for (let i = 0; i < e.changedTouches.length; i++) {
+      if (e.changedTouches[i].identifier === joyId) {
+        joyId = null;
+        keys.left = keys.right = keys.up = keys.down = false;
+        if (joystickKnob) joystickKnob.style.transform = 'translate(-50%, -50%)';
+        return;
+      }
+    }
+  }
+
+  function onBeamStart(e) { e.preventDefault(); keys.beam = true;  beamBtn?.classList.add('firing'); }
+  function onBeamEnd(e)   { e.preventDefault(); keys.beam = false; beamBtn?.classList.remove('firing'); }
+
+  function attachTouchControls() {
+    if (!joystick) return;
+    joystick.classList.remove('hidden');
+    beamBtn?.classList.remove('hidden');
+    joystick.addEventListener('touchstart',  onJoyStart,  { passive: false });
+    joystick.addEventListener('touchmove',   onJoyMove,   { passive: false });
+    joystick.addEventListener('touchend',    onJoyEnd,    { passive: false });
+    joystick.addEventListener('touchcancel', onJoyEnd,    { passive: false });
+    beamBtn?.addEventListener('touchstart',  onBeamStart, { passive: false });
+    beamBtn?.addEventListener('touchend',    onBeamEnd,   { passive: false });
+    beamBtn?.addEventListener('touchcancel', onBeamEnd,   { passive: false });
+  }
+
+  function detachTouchControls() {
+    joyId = null;
+    keys.left = keys.right = keys.up = keys.down = false;
+    if (joystickKnob) joystickKnob.style.transform = 'translate(-50%, -50%)';
+    if (!joystick) return;
+    joystick.classList.add('hidden');
+    beamBtn?.classList.add('hidden');
+    beamBtn?.classList.remove('firing');
+    joystick.removeEventListener('touchstart',  onJoyStart);
+    joystick.removeEventListener('touchmove',   onJoyMove);
+    joystick.removeEventListener('touchend',    onJoyEnd);
+    joystick.removeEventListener('touchcancel', onJoyEnd);
+    beamBtn?.removeEventListener('touchstart',  onBeamStart);
+    beamBtn?.removeEventListener('touchend',    onBeamEnd);
+    beamBtn?.removeEventListener('touchcancel', onBeamEnd);
+  }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   function angularDist(a, b) {
@@ -245,6 +337,7 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
 
     document.addEventListener('keydown', onKeyDown);
     document.addEventListener('keyup',   onKeyUp);
+    if (navigator.maxTouchPoints > 0) attachTouchControls();
   }
 
   function restoreUfo() {
@@ -267,6 +360,7 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
     }
     document.removeEventListener('keydown', onKeyDown);
     document.removeEventListener('keyup',   onKeyUp);
+    detachTouchControls();
     Object.keys(keys).forEach(k => { keys[k] = false; });
     audio?.playGameOver?.();
     _onEnd?.();
@@ -286,6 +380,7 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
     if (hud) hud.classList.add('hidden');
     document.removeEventListener('keydown', onKeyDown);
     document.removeEventListener('keyup',   onKeyUp);
+    detachTouchControls();
     Object.keys(keys).forEach(k => { keys[k] = false; });
     _onEnd?.();
   }

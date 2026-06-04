@@ -749,15 +749,16 @@ body {
 .about-btn {
   position: absolute;
   bottom: 16px;
-  left: 16px;
+  right: 12px;
   z-index: 100;
   font-family: 'VT323', monospace;
-  font-size: 17px;
+  font-size: 18px;
   letter-spacing: 2px;
   color: rgba(242, 242, 242, 0.65);
   background: rgba(14, 14, 21, 0.55);
-  border: 1px dashed rgba(242, 242, 242, 0.35);
-  padding: 5px 10px;
+  box-sizing: border-box;
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  padding: 4px 10px;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s, border-style 0.15s, background 0.15s;
 }
@@ -942,9 +943,10 @@ body {
 /* ─── Sound Toggle ────────────────────────────────────────────── */
 .sound-toggle {
   position: absolute;
-  bottom: 58px;
+  bottom: 16px;
   left: 12px;
   background: transparent;
+  box-sizing: border-box;
   border: 2px dashed rgba(255, 255, 255, 0.35);
   color: rgba(255, 255, 255, 0.55);
   font-family: 'VT323', monospace;
@@ -998,6 +1000,62 @@ body {
 .mg-hud.hidden { display: none; }
 .mg-stat strong { font-size: 28px; margin-left: 6px; }
 .mg-hint { font-size: 14px; letter-spacing: 1.5px; color: rgba(255,255,255,0.45); }
+
+/* ─── Mobile touch controls ──────────────────────────────────── */
+.mg-joystick {
+  position: fixed;
+  bottom: 60px;
+  left: 24px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  z-index: 550;
+  touch-action: none;
+  user-select: none;
+}
+.mg-joystick.hidden { display: none; }
+
+.mg-joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(136, 255, 136, 0.25);
+  border: 2px solid rgba(136, 255, 136, 0.6);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: background 0.1s;
+}
+
+.mg-beam-btn {
+  position: fixed;
+  bottom: 60px;
+  right: 24px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: rgba(68, 255, 68, 0.1);
+  border: 2px solid rgba(68, 255, 68, 0.45);
+  color: var(--green);
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+  letter-spacing: 3px;
+  z-index: 550;
+  touch-action: none;
+  user-select: none;
+  cursor: pointer;
+  transition: background 0.08s, border-color 0.08s;
+}
+.mg-beam-btn:active,
+.mg-beam-btn.firing {
+  background: rgba(68, 255, 68, 0.28);
+  border-color: rgba(68, 255, 68, 0.9);
+}
+.mg-beam-btn.hidden { display: none; }
 
 /* ─── Mini-game Over Screen ───────────────────────────────────── */
 .mg-gameover {
@@ -1173,7 +1231,7 @@ body {
     bottom: 56px;
   }
   .sound-toggle {
-    bottom: 100px;
+    bottom: 56px;
   }
   .mg-hud { font-size: 18px; gap: 16px; padding: 5px 14px; }
   .mg-hint { display: none; }

@@ -191,6 +191,12 @@
       <div class="mg-hint">WASD / ARROWS — MOVE &nbsp;|&nbsp; SPACE — BEAM</div>
     </div>
 
+    <!-- Mobile touch controls (shown only during game on touch devices) -->
+    <div id="mg-joystick" class="mg-joystick hidden">
+      <div id="mg-joystick-knob" class="mg-joystick-knob"></div>
+    </div>
+    <button id="mg-beam-btn" class="mg-beam-btn hidden" type="button">BEAM</button>
+
     <!-- Mini-game over screen -->
     <div id="mg-gameover" class="mg-gameover hidden">
       <div class="mg-gameover-panel">
@@ -240,7 +246,7 @@
             <p>Spin it. Zoom in. Find the secrets.</p>
             <div class="about-rule"></div>
             <div class="about-meta">
-              <span class="about-stat" id="about-sticker-count">[ ?? DROPS LOGGED ]</span>
+              <span class="about-stat" id="about-sticker-count">[ ?? SPORES LOGGED ]</span>
               <span class="about-stat">[ STILL GROWING ]</span>
             </div>
             <div class="about-rule"></div>
