@@ -1,11 +1,33 @@
 import * as THREE from 'three';
 
 export function createUI(stickerData, container, camera, orbit, sceneSetup) {
-  // Loading overlay
+  // Loading overlay with cycling retro boot messages
   const loadingOverlay = document.getElementById('loading-overlay');
+  const loadingText = document.querySelector('.loading-text');
+  let _msgInterval = null;
+  const _loadingMessages = [
+    'INITIALIZING...',
+    'LOADING GLOBE...',
+    'MAPPING STICKERS...',
+    'CALIBRATING ORBIT...',
+    'LOCATING DROPS...',
+    'SYNCING DATA...'
+  ];
+  let _msgIndex = 0;
+  if (loadingText) {
+    _msgInterval = setInterval(() => {
+      _msgIndex = (_msgIndex + 1) % _loadingMessages.length;
+      loadingText.textContent = _loadingMessages[_msgIndex];
+    }, 950);
+  }
   const loading = {
     show: () => loadingOverlay && (loadingOverlay.style.display = 'flex'),
-    hide: () => loadingOverlay && (loadingOverlay.style.display = 'none')
+    hide: () => {
+      clearInterval(_msgInterval);
+      if (!loadingOverlay) return;
+      loadingOverlay.style.opacity = '0';
+      setTimeout(() => { loadingOverlay.style.display = 'none'; }, 1000);
+    }
   };
 
   // Sidebar
@@ -38,6 +60,13 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
       item.addEventListener('click', () => {
         if (item.classList.contains('locked')) return;
         onSidebarClick(index);
+        // Auto-collapse sidebar on mobile after selecting a sticker
+        if (window.matchMedia('(max-width: 768px)').matches) {
+          const _sb = document.querySelector('.sidebar');
+          const _stb = document.getElementById('sidebar-toggle');
+          if (_sb) _sb.classList.add('collapsed');
+          if (_stb) _stb.setAttribute('aria-expanded', 'false');
+        }
       });
       stickerList.appendChild(item);
     });
@@ -76,6 +105,8 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
   const popoutLink = document.getElementById('popout-link');
   let currentIndex = null;
 
+  const gameBtn = document.getElementById('popout-game-btn');
+
   const popoutUI = {
     show: (index) => {
       if (!popout) return;
@@ -91,16 +122,34 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
           ? `${Number(s.lat).toFixed(4)}°, ${Number(s.lng).toFixed(4)}°`
           : 'Location classified';
       }
-      if (popoutLink) popoutLink.href = s.link || '#';
+      if (popoutLink) {
+        popoutLink.href = s.link || '#';
+        popoutLink.classList.toggle('hidden', !!(s.isMoon || s.isUfo));
+      }
       if (popoutImage) {
-        popoutImage.src = './assets/stickers/' + (s.imageUrl || '');
+        const newSrc = './assets/stickers/' + (s.imageUrl || '');
+        if (popoutImage.src !== newSrc) {
+          popoutImage.style.opacity = '0';
+          popoutImage.onload = () => { popoutImage.style.opacity = '1'; };
+          popoutImage.onerror = () => { popoutImage.style.opacity = '1'; };
+        }
+        popoutImage.src = newSrc;
         popoutImage.alt = s.title || 'Sticker photo';
       }
+      if (gameBtn) gameBtn.classList.toggle('hidden', !s.isUfo);
 
       popout.classList.remove('hidden');
       requestAnimationFrame(() => popout.classList.add('open'));
       currentIndex = index;
       popoutUI.updatePosition();
+
+      // Auto-collapse sidebar on mobile when popout opens
+      if (window.matchMedia('(max-width: 768px)').matches) {
+        const _sb = document.querySelector('.sidebar');
+        const _stb = document.getElementById('sidebar-toggle');
+        if (_sb) _sb.classList.add('collapsed');
+        if (_stb) _stb.setAttribute('aria-expanded', 'false');
+      }
     },
     hide: () => {
       if (!popout) return;
@@ -113,7 +162,18 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
       currentIndex = null;
     },
     updatePosition: () => {
-      if (!popout || currentIndex == null || !orbit.lockedMarker) return;
+      if (!popout || currentIndex == null) return;
+
+      const isMobile = window.matchMedia('(max-width: 768px)').matches;
+      if (isMobile) {
+        popout.style.left = '8px';
+        popout.style.top = '8px';
+        popout.style.right = '8px';
+        popout.style.width = 'auto';
+        return;
+      }
+
+      if (!orbit.lockedMarker) return;
 
       const rect = container.getBoundingClientRect();
       const world = new THREE.Vector3();
@@ -133,6 +193,8 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
 
       popout.style.left = `${left}px`;
       popout.style.top = `${top}px`;
+      popout.style.right = '';
+      popout.style.width = '';
     }
   };
 
@@ -308,11 +370,62 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
   const sidebarToggleBtn = document.getElementById('sidebar-toggle');
   const sidebarEl = document.querySelector('.sidebar');
   if (sidebarToggleBtn && sidebarEl) {
+    // Start collapsed on mobile
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      sidebarEl.classList.add('collapsed');
+      sidebarToggleBtn.setAttribute('aria-expanded', 'false');
+    }
+
     sidebarToggleBtn.addEventListener('click', () => {
       const collapsed = sidebarEl.classList.toggle('collapsed');
       sidebarToggleBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     });
   }
 
-  return { loading, sidebar, popout: popoutUI, settings };
+  // About modal
+  const aboutBtn = document.getElementById('about-btn');
+  const aboutOverlay = document.getElementById('about-overlay');
+  const aboutClose = document.getElementById('about-close');
+  const aboutStickerCount = document.getElementById('about-sticker-count');
+
+  if (aboutStickerCount) {
+    const realCount = stickerData.filter((s) => !s.isMoon && !s.isUfo).length;
+    aboutStickerCount.textContent = `[ ${realCount} DROPS LOGGED ]`;
+  }
+
+  function setAboutOpen(isOpen) {
+    if (!aboutOverlay) return;
+    if (isOpen) {
+      aboutOverlay.classList.remove('hidden');
+      aboutOverlay.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(() => aboutOverlay.classList.add('open'));
+    } else {
+      aboutOverlay.classList.remove('open');
+      aboutOverlay.setAttribute('aria-hidden', 'true');
+      setTimeout(() => {
+        if (!aboutOverlay.classList.contains('open')) {
+          aboutOverlay.classList.add('hidden');
+        }
+      }, 220);
+    }
+  }
+
+  aboutBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setAboutOpen(true);
+  });
+
+  aboutClose?.addEventListener('click', () => setAboutOpen(false));
+
+  aboutOverlay?.addEventListener('click', (e) => {
+    if (e.target === aboutOverlay) setAboutOpen(false);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && aboutOverlay && !aboutOverlay.classList.contains('hidden')) {
+      setAboutOpen(false);
+    }
+  });
+
+  return { loading, sidebar, popout: popoutUI, settings, gameBtn };
 }

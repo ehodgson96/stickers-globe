@@ -206,11 +206,134 @@ export function createFeatures({ scene, globe, globeSetup }) {
     };
   }
 
+  // ── 9. Shooting Stars ─────────────────────────────────────────────────
+  function makeShootingStars() {
+    let enabled = true;
+    const MAX_ACTIVE = 3;
+    let timeSinceLastSpawn = 0;
+    let nextSpawnIn = 5 + Math.random() * 5;
+
+    const stars = [];
+    for (let i = 0; i < MAX_ACTIVE; i++) {
+      const geo = new THREE.BufferGeometry();
+      const positions = new Float32Array(6); // 2 vertices * 3 components
+      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+      const mat = new THREE.LineBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      });
+      const line = new THREE.Line(geo, mat);
+      line.visible = false;
+      scene.add(line);
+      stars.push({
+        line,
+        geo,
+        mat,
+        active: false,
+        life: 0,
+        maxLife: 1,
+        origin: new THREE.Vector3(),
+        direction: new THREE.Vector3(),
+        speed: 20
+      });
+    }
+
+    function spawnStar() {
+      const inactive = stars.filter(s => !s.active);
+      if (inactive.length === 0) return;
+      const star = inactive[Math.floor(Math.random() * inactive.length)];
+
+      const u = Math.random();
+      const v = Math.random();
+      const theta = 2 * Math.PI * u;
+      const phi = Math.acos(2 * v - 1);
+      const r = 75;
+      star.origin.set(
+        r * Math.sin(phi) * Math.cos(theta),
+        r * Math.cos(phi),
+        r * Math.sin(phi) * Math.sin(theta)
+      );
+
+      const rand = new THREE.Vector3(
+        Math.random() - 0.5,
+        Math.random() - 0.5,
+        Math.random() - 0.5
+      );
+      star.direction.crossVectors(star.origin, rand).normalize();
+
+      star.speed = 18 + Math.random() * 14;
+      star.maxLife = 0.9 + Math.random() * 0.8;
+      star.life = 0;
+      star.active = true;
+      star.line.visible = true;
+    }
+
+    function updateStar(star, dt) {
+      star.life += dt;
+      const t = star.life / star.maxLife;
+      const trailLen = 10;
+      const headDist = star.life * star.speed;
+      const tailDist = Math.max(0, headDist - trailLen);
+
+      const head = star.origin.clone().addScaledVector(star.direction, headDist);
+      const tail = star.origin.clone().addScaledVector(star.direction, tailDist);
+
+      const positions = star.geo.attributes.position.array;
+      positions[0] = tail.x;
+      positions[1] = tail.y;
+      positions[2] = tail.z;
+      positions[3] = head.x;
+      positions[4] = head.y;
+      positions[5] = head.z;
+      star.geo.attributes.position.needsUpdate = true;
+
+      star.mat.opacity = Math.sin(t * Math.PI) * 0.8;
+
+      if (star.life >= star.maxLife) {
+        star.active = false;
+        star.line.visible = false;
+      }
+    }
+
+    return {
+      id: 'shootingStars',
+      label: 'Shooting Stars',
+      getEnabled: () => enabled,
+      setEnabled: (v) => {
+        enabled = Boolean(v);
+        if (!enabled) {
+          stars.forEach(s => {
+            s.active = false;
+            s.line.visible = false;
+          });
+        }
+      },
+      controls: [],
+      _update(_time, dt) {
+        if (!enabled) return;
+
+        timeSinceLastSpawn += dt;
+        if (timeSinceLastSpawn >= nextSpawnIn) {
+          spawnStar();
+          timeSinceLastSpawn = 0;
+          nextSpawnIn = 7 + Math.random() * 10;
+        }
+
+        stars.forEach(s => {
+          if (s.active) updateStar(s, dt);
+        });
+      }
+    };
+  }
+
   // ── Assemble ──────────────────────────────────────────────────────────
   const features = [
     makeAtmosphereGlow(),
     makeAsteroidBelt(),
-    makeParallaxStars()
+    makeParallaxStars(),
+    makeShootingStars()
   ];
 
   return {

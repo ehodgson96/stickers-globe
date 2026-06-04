@@ -282,7 +282,7 @@ export function createScene(container) {
 
   // Auto-glitch timing
   let startTime = Date.now();
-  let autoGlitchEnabled = true; // Set to false to disable auto-glitch
+  let autoGlitchEnabled = false;
 
   function rebuildOutlineSelection(force = false) {
     if (!force) {

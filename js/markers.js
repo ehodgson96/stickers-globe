@@ -173,7 +173,7 @@ export function createMarkers(
     });
 
     // Moon marker — ray-sphere occlusion against the globe
-    if (moonMarker) {
+    if (moonMarker && markerGroup.visible) {
       moonMarker.getWorldPosition(_moonWorldPos);
       _camToMoon.copy(_moonWorldPos).sub(camera.position);
       const moonDist = _camToMoon.length();
@@ -187,7 +187,7 @@ export function createMarkers(
     }
 
     // UFO marker — same ray-sphere occlusion
-    if (ufoMarker) {
+    if (ufoMarker && markerGroup.visible) {
       ufoMarker.getWorldPosition(_ufoWorldPos);
       _camToUfo.copy(_ufoWorldPos).sub(camera.position);
       const ufoDist = _camToUfo.length();
@@ -275,6 +275,11 @@ export function createMarkers(
     });
   }
 
+  function revealMarker(index) {
+    const m = markers.find(m => m.userData.index === index);
+    if (m) m.material.opacity = 1;
+  }
+
   function addMoonMarker(moonMesh, stickerEntry, index) {
     const sprite = new THREE.Sprite(
       new THREE.SpriteMaterial({
@@ -282,7 +287,7 @@ export function createMarkers(
         sizeAttenuation: false,
         depthTest: false,
         transparent: true,
-        opacity: 0.2
+        opacity: 0.1
       })
     );
     sprite.center.set(0.5, 0);
@@ -302,7 +307,7 @@ export function createMarkers(
         sizeAttenuation: false,
         depthTest: false,
         transparent: true,
-        opacity: 0.2
+        opacity: 0.1
       })
     );
     sprite.center.set(0.5, 0);
@@ -366,7 +371,15 @@ export function createMarkers(
     highlightMarker,
     addMoonMarker,
     addUfoMarker,
+    revealMarker,
     setDragging: (val) => (isDragging = val),
-    onSelect: (callback) => (onMarkerClick = callback)
+    onSelect: (callback) => (onMarkerClick = callback),
+    getHovered: (clientX, clientY, rect) => handleSelection(clientX, clientY, rect),
+    setVisible: (v) => {
+      markerGroup.visible = Boolean(v);
+      clusterGroup.visible = Boolean(v);
+      if (moonMarker) moonMarker.visible = Boolean(v);
+      if (ufoMarker) ufoMarker.visible = Boolean(v);
+    }
   };
 }

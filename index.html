@@ -37,13 +37,15 @@
       {
         "imports": {
           "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/"
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/",
+          "ogl": "https://esm.sh/ogl@1.0.9"
         }
       }
     </script>
   </head>
   <body>
     <div id="loading-overlay">
+      <div id="particles-bg"></div>
       <div class="loading-content">
         <div class="loading-ring">
           <svg class="ring-svg" viewBox="0 0 100 100">
@@ -56,7 +58,7 @@
             class="loading-logo"
           />
         </div>
-        <div class="loading-text">Loading...</div>
+        <div class="loading-text">Welcome!</div>
       </div>
     </div>
     <div class="container">
@@ -96,6 +98,21 @@
             <path d="M3 6h18M3 12h18M3 18h18"/>
           </svg>
         </button>
+        <button
+          id="about-btn"
+          class="about-btn"
+          type="button"
+          aria-label="About ShroomSquad"
+          title="About ShroomSquad"
+        >[ ? ]</button>
+        <button
+          id="sound-toggle"
+          class="sound-toggle"
+          type="button"
+          aria-label="Toggle sound"
+          title="Toggle Sound"
+        >[ ♪ ]</button>
+        <div id="marker-tooltip" class="marker-tooltip hidden"></div>
         <button
           id="settings-cog"
           class="settings-cog"
@@ -153,6 +170,7 @@
               rel="noopener"
               >Open Instagram ↗</a
             >
+            <button id="popout-game-btn" class="popout-game-btn hidden" type="button">▶ PLAY UFO GAME</button>
           </div>
         </div>
       </div>
@@ -163,6 +181,74 @@
         </div>
         <div class="sticker-count" id="sticker-count"></div>
         <div id="sticker-list"></div>
+      </div>
+    </div>
+
+    <!-- Mini-game HUD -->
+    <div id="mg-hud" class="mg-hud hidden">
+      <div class="mg-stat">SCORE <strong id="mg-score">0</strong></div>
+      <div class="mg-stat">TIME <strong id="mg-time">45</strong></div>
+      <div class="mg-hint">WASD / ARROWS — MOVE &nbsp;|&nbsp; SPACE — BEAM</div>
+    </div>
+
+    <!-- Mini-game over screen -->
+    <div id="mg-gameover" class="mg-gameover hidden">
+      <div class="mg-gameover-panel">
+        <div class="mg-gameover-title">// MISSION COMPLETE //</div>
+        <div class="mg-gameover-sub">COWS ABDUCTED</div>
+        <div class="mg-gameover-score" id="mg-final-score">0</div>
+        <div class="mg-gameover-actions">
+          <button id="mg-restart" class="mg-btn" type="button">[ PLAY AGAIN ]</button>
+          <button id="mg-quit" class="mg-btn" type="button">[ EXIT ]</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- About overlay modal -->
+    <div id="about-overlay" class="about-overlay hidden" role="dialog" aria-label="About ShroomSquad" aria-hidden="true">
+      <div class="about-panel">
+        <div class="about-header">
+          <span>// ABOUT //</span>
+          <button id="about-close" type="button" aria-label="Close about">✕</button>
+        </div>
+        <div class="about-scroll">
+          <!--
+            GROUP PHOTO PLACEHOLDER
+            Place your crew photo at: assets/materials/crew.png
+            Recommended size: 800×600px or 4:3 ratio
+          -->
+          <div class="about-photo-wrap">
+            <img
+              id="about-photo"
+              src="./assets/materials/crew.png"
+              alt="ShroomSquad crew"
+              class="about-photo"
+              onerror="this.style.display='none';document.getElementById('about-photo-placeholder').style.display='flex'"
+            />
+            <div id="about-photo-placeholder" class="about-photo-placeholder">
+              <span class="about-placeholder-icon">[ 📸 ]</span>
+              <span>CREW PHOTO</span>
+              <span class="about-photo-hint">// add assets/materials/crew.png //</span>
+            </div>
+          </div>
+          <div class="about-text">
+            <p class="about-squad-name">SHROOM SQUAD</p>
+            <div class="about-rule"></div>
+            <p>We make custom mushroom stickers and plant them in interesting places around the world — cities, beaches, temples, train stations, back alleys.</p>
+            <div class="about-rule"></div>
+            <p>This globe maps every verified spore we've spread.</p>
+            <p>Spin it. Zoom in. Find the secrets.</p>
+            <div class="about-rule"></div>
+            <div class="about-meta">
+              <span class="about-stat" id="about-sticker-count">[ ?? DROPS LOGGED ]</span>
+              <span class="about-stat">[ STILL GROWING ]</span>
+            </div>
+            <div class="about-rule"></div>
+            <div class="about-links">
+              <a href="https://www.instagram.com/shroomsquad.co.uk/" target="_blank" rel="noopener" class="about-link">INSTAGRAM ↗</a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 

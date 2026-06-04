@@ -25,18 +25,28 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(10, 10, 10, 0.98);
+  background: black;
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  transition: opacity 1s ease;
+}
+
+#particles-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
 }
 
 .loading-content {
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 .loading-ring {
@@ -132,6 +142,7 @@ body {
 }
 #globe-container {
   flex: 1;
+  min-width: 0;
   position: relative;
   overflow: visible;
 }
@@ -725,7 +736,7 @@ body {
 }
 
 .popout-image-wrap { width: 100%; aspect-ratio: 1/1; background:#0b0b12; overflow:hidden; }
-.popout-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.popout-image-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s ease; }
 
 .popout-body { padding: 10px 12px 12px; }
 .popout-title { font-size: 22px; letter-spacing: 2px; margin-bottom: 2px; text-shadow: 0 1px 0 #000; }
@@ -733,3 +744,445 @@ body {
 .popout-coords { font-size: 18px; color: var(--green); letter-spacing: 2px; text-shadow: 0 0 4px rgba(136,255,136,.25), 0 1px 0 #000; margin-bottom: 8px; }
 .popout-link { display:inline-block; text-decoration:none; color:#0a0a0a; background:#fff; padding:4px 8px; border:2px solid #fff; box-shadow:inset 0 0 0 2px #cfcfcf; }
 .popout-link:hover { filter:brightness(0.95); }
+
+/* ─── About Button ─────────────────────────────────────────────── */
+.about-btn {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 100;
+  font-family: 'VT323', monospace;
+  font-size: 17px;
+  letter-spacing: 2px;
+  color: rgba(242, 242, 242, 0.65);
+  background: rgba(14, 14, 21, 0.55);
+  border: 1px dashed rgba(242, 242, 242, 0.35);
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, border-style 0.15s, background 0.15s;
+}
+.about-btn:hover {
+  color: #f2f2f2;
+  border-color: rgba(242, 242, 242, 0.75);
+  border-style: solid;
+  background: rgba(14, 14, 21, 0.82);
+}
+
+/* ─── About Overlay ────────────────────────────────────────────── */
+.about-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(5, 5, 10, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.about-overlay.hidden {
+  display: none;
+}
+.about-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.about-panel {
+  width: min(540px, 100%);
+  max-height: min(88vh, 680px);
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 2px solid #fff;
+  box-shadow: inset 0 0 0 2px #1d1d30, 0 12px 40px rgba(0, 0, 0, 0.6);
+  font-family: 'VT323', monospace;
+  position: relative;
+  transform: scale(0.96);
+  transition: transform 0.2s ease;
+}
+.about-overlay.open .about-panel {
+  transform: scale(1);
+}
+.about-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.06) 0px,
+    rgba(255, 255, 255, 0.06) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.28;
+  mix-blend-mode: overlay;
+}
+.about-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: #f2f2f2;
+  background: linear-gradient(#0f0f1e, #0b0b15);
+  border-bottom: 2px solid #fff;
+  text-shadow: 0 1px 0 #000;
+  flex-shrink: 0;
+}
+.about-header button {
+  border: 1px solid #fff;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-family: inherit;
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.about-scroll {
+  overflow-y: auto;
+  flex: 1;
+  position: relative;
+  z-index: 1;
+}
+.about-photo-wrap {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #080810;
+  overflow: hidden;
+  border-bottom: 2px solid #1d1d30;
+  position: relative;
+}
+.about-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.about-photo-placeholder {
+  display: none; /* shown via JS onerror when crew.png is missing */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: absolute;
+  inset: 12px;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 20px;
+  letter-spacing: 2px;
+  border: 2px dashed rgba(255, 255, 255, 0.15);
+  box-sizing: border-box;
+}
+.about-placeholder-icon { font-size: 36px; }
+.about-photo-hint { font-size: 14px; color: rgba(255,255,255,0.2); letter-spacing: 1px; }
+.about-text {
+  padding: 18px 20px 24px;
+  font-size: 19px;
+  letter-spacing: 1.5px;
+  line-height: 1.45;
+  color: var(--dim-ink);
+}
+.about-text p {
+  margin-bottom: 10px;
+}
+.about-squad-name {
+  font-size: 34px;
+  letter-spacing: 5px;
+  color: #f2f2f2;
+  text-shadow: 0 0 10px rgba(255,255,255,0.12), 0 1px 0 #000;
+  margin-bottom: 4px !important;
+}
+.about-rule {
+  height: 1px;
+  margin: 10px 0 12px;
+  background: repeating-linear-gradient(
+    to right,
+    rgba(255,255,255,0.5) 0 5px,
+    transparent 5px 10px
+  );
+  opacity: 0.5;
+}
+.about-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.about-stat {
+  display: inline-block;
+  color: var(--green);
+  font-size: 18px;
+  letter-spacing: 2px;
+  text-shadow: 0 0 5px rgba(136,255,136,0.2);
+}
+.about-links {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.about-link {
+  display: inline-block;
+  text-decoration: none;
+  color: #0a0a0a;
+  background: #f2f2f2;
+  padding: 5px 12px;
+  border: 2px solid #fff;
+  box-shadow: inset 0 0 0 2px #cfcfcf;
+  font-size: 18px;
+  letter-spacing: 2px;
+  transition: filter 0.1s;
+}
+.about-link:hover { filter: brightness(0.9); }
+
+/* ─── Sound Toggle ────────────────────────────────────────────── */
+.sound-toggle {
+  position: absolute;
+  bottom: 58px;
+  left: 12px;
+  background: transparent;
+  border: 2px dashed rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.55);
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  padding: 4px 10px;
+  z-index: 100;
+  transition: color 0.15s, border-color 0.15s;
+}
+.sound-toggle:hover { color: #f2f2f2; border-color: rgba(255,255,255,0.7); }
+.sound-toggle.active { color: var(--green); border-color: var(--green); text-shadow: 0 0 8px rgba(136,255,136,0.4); }
+
+/* ─── Marker Tooltip ──────────────────────────────────────────── */
+.marker-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: rgba(10, 10, 16, 0.88);
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+  color: #f2f2f2;
+  font-family: 'VT323', monospace;
+  font-size: 17px;
+  letter-spacing: 2px;
+  padding: 4px 10px;
+  z-index: 90;
+  white-space: nowrap;
+  transform: translate(-50%, -120%);
+  transition: opacity 0.1s;
+}
+.marker-tooltip.hidden { opacity: 0; pointer-events: none; }
+
+/* ─── Mini-game HUD ───────────────────────────────────────────── */
+.mg-hud {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.72);
+  border: 2px dashed rgba(255, 255, 255, 0.4);
+  padding: 6px 22px;
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  letter-spacing: 3px;
+  color: var(--green);
+  z-index: 500;
+  pointer-events: none;
+}
+.mg-hud.hidden { display: none; }
+.mg-stat strong { font-size: 28px; margin-left: 6px; }
+.mg-hint { font-size: 14px; letter-spacing: 1.5px; color: rgba(255,255,255,0.45); }
+
+/* ─── Mini-game Over Screen ───────────────────────────────────── */
+.mg-gameover {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.78);
+}
+.mg-gameover.hidden { display: none; }
+.mg-gameover-panel {
+  background: rgba(11, 11, 18, 0.97);
+  border: 2px dashed rgba(255, 255, 255, 0.55);
+  padding: 36px 48px;
+  text-align: center;
+  font-family: 'VT323', monospace;
+  letter-spacing: 3px;
+  max-width: 440px;
+  width: 90vw;
+}
+.mg-gameover-title {
+  font-size: 30px;
+  color: var(--green);
+  text-shadow: 0 0 12px rgba(136,255,136,0.35);
+  margin-bottom: 10px;
+}
+.mg-gameover-sub { font-size: 18px; color: rgba(255,255,255,0.5); margin-bottom: 6px; }
+.mg-gameover-score {
+  font-size: 80px;
+  color: #f2f2f2;
+  line-height: 1;
+  margin-bottom: 24px;
+  text-shadow: 0 0 20px rgba(255,255,255,0.15);
+}
+.mg-gameover-actions { display: flex; gap: 14px; justify-content: center; }
+.mg-btn {
+  background: transparent;
+  border: 2px dashed rgba(255, 255, 255, 0.55);
+  color: #f2f2f2;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  letter-spacing: 2px;
+  padding: 8px 18px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.mg-btn:hover { background: rgba(255,255,255,0.08); }
+.mg-btn-sec { color: rgba(255,255,255,0.5); border-color: rgba(255,255,255,0.25); }
+
+/* ─── Popout game button ──────────────────────────────────────── */
+.popout-game-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  background: transparent;
+  border: 2px dashed var(--green);
+  color: var(--green);
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  letter-spacing: 3px;
+  padding: 8px;
+  cursor: pointer;
+  transition: background 0.1s;
+  text-shadow: 0 0 8px rgba(136,255,136,0.3);
+}
+.popout-game-btn:hover { background: rgba(136,255,136,0.08); }
+.popout-game-btn.hidden { display: none; }
+.popout-link.hidden { display: none; }
+
+/* ─── Mobile: Full Overhaul ────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Container shrinks to leave room for the fixed bottom tab */
+  .container {
+    flex-direction: column;
+    height: calc(100vh - 44px);
+  }
+
+  /* Globe takes all remaining container space */
+  #globe-container {
+    flex: 1;
+    height: auto;
+  }
+
+  /* Sidebar: fixed bottom sheet that slides up */
+  .sidebar {
+    position: fixed;
+    bottom: 44px;
+    left: 0;
+    right: 0;
+    top: auto;
+    z-index: 150;
+    width: 100%;
+    height: 55vh;
+    max-height: 70vh;
+    border-left: none;
+    border-top: 2px solid var(--ink);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(0);
+    padding: 16px 14px 18px;
+    overflow-y: auto;
+  }
+
+  /* Collapsed: slide off below screen */
+  .sidebar.collapsed {
+    transform: translateY(100%);
+    /* preserve dimensions so the animation is smooth */
+    width: 100%;
+    height: 55vh;
+    padding: 16px 14px 18px;
+    border-top: 2px solid var(--ink);
+    overflow-y: auto;
+    min-width: 0;
+  }
+
+  /* Full-width "STICKER SPOTS" tab at very bottom */
+  .sidebar-toggle {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    height: 44px;
+    background: rgba(11, 11, 18, 0.97);
+    border: none;
+    border-top: 2px solid rgba(255, 255, 255, 0.65);
+    padding: 0;
+    opacity: 1;
+    z-index: 200;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    letter-spacing: 3px;
+    color: #f2f2f2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s linear;
+  }
+  .sidebar-toggle:hover,
+  .sidebar-toggle[aria-expanded="false"] {
+    opacity: 1;
+    border-color: rgba(255, 255, 255, 0.65);
+    background: rgba(14, 14, 22, 0.99);
+  }
+  .sidebar-toggle svg { display: none; }
+  .sidebar-toggle::before { content: "▲  STICKER SPOTS  ▲"; }
+  .sidebar-toggle[aria-expanded="true"]::before { content: "▼  CLOSE LIST  ▼"; }
+
+  /* Bigger touch targets in sidebar list */
+  .sticker-item {
+    padding: 12px 10px;
+    min-height: 58px;
+    margin: 8px 4px;
+  }
+
+  /* Popout: fixed at top of screen on mobile, above sidebar */
+  .sticker-popout {
+    position: fixed;
+    z-index: 160;
+    max-width: calc(100vw - 16px);
+  }
+
+  /* Compact image on mobile */
+  .popout-image-wrap {
+    aspect-ratio: 16 / 9;
+  }
+
+  /* About + sound buttons above the tab */
+  .about-btn {
+    bottom: 56px;
+  }
+  .sound-toggle {
+    bottom: 100px;
+  }
+  .mg-hud { font-size: 18px; gap: 16px; padding: 5px 14px; }
+  .mg-hint { display: none; }
+
+  /* About panel full-screen on small screens */
+  .about-panel {
+    max-height: 90vh;
+  }
+  .about-photo-wrap {
+    aspect-ratio: 16 / 9;
+  }
+}
