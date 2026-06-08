@@ -759,6 +759,10 @@ body {
   box-sizing: border-box;
   border: 2px dashed rgba(255, 255, 255, 0.35);
   padding: 4px 10px;
+  min-width: 72px;
+  height: 34px;
+  line-height: 26px;
+  text-align: center;
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s, border-style 0.15s, background 0.15s;
 }
@@ -954,6 +958,10 @@ body {
   letter-spacing: 2px;
   cursor: pointer;
   padding: 4px 10px;
+  min-width: 72px;
+  height: 34px;
+  line-height: 26px;
+  text-align: center;
   z-index: 100;
   transition: color 0.15s, border-color 0.15s;
 }
@@ -1207,6 +1215,9 @@ body {
   .sidebar-toggle::before { content: "▲  STICKER SPOTS  ▲"; }
   .sidebar-toggle[aria-expanded="true"]::before { content: "▼  CLOSE LIST  ▼"; }
 
+  .header { position: static; }
+  .marker-tooltip { display: none; }
+
   /* Bigger touch targets in sidebar list */
   .sticker-item {
     padding: 12px 10px;
@@ -1226,13 +1237,54 @@ body {
     aspect-ratio: 16 / 9;
   }
 
-  /* About + sound buttons above the tab */
-  .about-btn {
-    bottom: 56px;
-  }
+  /* About, sound, and controls buttons — row above the tab */
+  .about-btn,
   .sound-toggle {
-    bottom: 56px;
+    position: fixed;
+    bottom: 54px;
   }
+
+  .about-btn  { right: 12px; left: auto; }
+  .sound-toggle { left: 12px; }
+
+  .controls-toggle {
+    position: fixed;
+    bottom: 54px;
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 34px;
+    line-height: 26px;
+    padding: 4px 10px;
+    min-width: 72px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.55);
+    background: transparent;
+    border: 2px dashed rgba(255, 255, 255, 0.35);
+    box-shadow: none;
+  }
+
+  .controls {
+    position: fixed;
+    bottom: 96px;
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  .controls::before {
+    content: "×";
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    font-family: "VT323", monospace;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.45);
+    line-height: 1;
+    pointer-events: none;
+  }
+
   .mg-hud { font-size: 18px; gap: 16px; padding: 5px 14px; }
   .mg-hint { display: none; }
 
