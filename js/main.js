@@ -90,6 +90,17 @@ async function init() {
   loadingManager.onStart = () => ui.loading.show();
   loadingManager.onError = (url) => console.error(`Error loading ${url}`);
 
+  // Warm the browser cache with sticker photos in the background, so the
+  // popout shows them instantly on click. Not tied to loadingManager —
+  // this must not hold up the loading overlay.
+  stickerData.forEach((s) => {
+    if (!s.imageUrl) return;
+    const src = /^https?:\/\//.test(s.imageUrl)
+      ? s.imageUrl
+      : `./assets/stickers/${s.imageUrl}`;
+    new Image().src = src;
+  });
+
   // Create globe and markers
   const globeSetup = createGlobe(sceneSetup.scene, textureLoader, gltfLoader);
   sceneSetup.setOutlineTargets([globeSetup.globe, globeSetup.celestial.mars.mesh]);
