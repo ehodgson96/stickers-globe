@@ -10,7 +10,9 @@ import { initParticles } from "./particles-bg.js";
 import { vectorToAngles, animateOrbit, shortestAngleDelta } from "./utils.js";
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { createClient } from '@supabase/supabase-js';
 
+const supabase = createClient(CONFIG.supabase.url, CONFIG.supabase.publishableKey);
 
 async function init() {
   const container = document.getElementById("globe-container");
@@ -18,8 +20,20 @@ async function init() {
   // Load sticker data
   let stickerData = [];
   try {
-    const response = await fetch(CONFIG.paths.stickersJson);
-    stickerData = await response.json();
+    const { data, error } = await supabase
+      .from('stickers')
+      .select('lat, lng, title, date, link, image_url, like_count')
+      .order('id', { ascending: true });
+    if (error) throw error;
+    stickerData = data.map((s) => ({
+      lat: s.lat,
+      lng: s.lng,
+      title: s.title,
+      date: s.date,
+      link: s.link,
+      imageUrl: s.image_url,
+      likeCount: String(s.like_count)
+    }));
   } catch (error) {
     console.error("Error loading stickers:", error);
   }
@@ -75,6 +89,17 @@ async function init() {
 
   loadingManager.onStart = () => ui.loading.show();
   loadingManager.onError = (url) => console.error(`Error loading ${url}`);
+
+  // Warm the browser cache with sticker photos in the background, so the
+  // popout shows them instantly on click. Not tied to loadingManager —
+  // this must not hold up the loading overlay.
+  stickerData.forEach((s) => {
+    if (!s.imageUrl) return;
+    const src = /^https?:\/\//.test(s.imageUrl)
+      ? s.imageUrl
+      : `./assets/stickers/${s.imageUrl}`;
+    new Image().src = src;
+  });
 
   // Create globe and markers
   const globeSetup = createGlobe(sceneSetup.scene, textureLoader, gltfLoader);

@@ -1,4 +1,8 @@
 export const CONFIG = {
+  supabase: {
+    url: 'https://ahasvetuixvcvdyxgliz.supabase.co',
+    publishableKey: 'sb_publishable_CUtgsiA_RvD11uwQZLF58w_IIVtbbAD'
+  },
   orbit: {
     radius: 2.5,
     minRadius: 1.1,
