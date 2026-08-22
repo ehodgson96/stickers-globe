@@ -127,7 +127,9 @@ export function createUI(stickerData, container, camera, orbit, sceneSetup) {
         popoutLink.classList.toggle('hidden', !!(s.isMoon || s.isUfo));
       }
       if (popoutImage) {
-        const newSrc = './assets/stickers/' + (s.imageUrl || '');
+        const newSrc = /^https?:\/\//.test(s.imageUrl || '')
+          ? s.imageUrl
+          : './assets/stickers/' + (s.imageUrl || '');
         if (popoutImage.src !== newSrc) {
           popoutImage.style.opacity = '0';
           popoutImage.onload = () => { popoutImage.style.opacity = '1'; };
