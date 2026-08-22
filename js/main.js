@@ -90,6 +90,19 @@ async function init() {
   loadingManager.onStart = () => ui.loading.show();
   loadingManager.onError = (url) => console.error(`Error loading ${url}`);
 
+  // Preload sticker photos so the popout shows them instantly on click
+  stickerData.forEach((s) => {
+    if (!s.imageUrl) return;
+    const src = /^https?:\/\//.test(s.imageUrl)
+      ? s.imageUrl
+      : `./assets/stickers/${s.imageUrl}`;
+    loadingManager.itemStart(src);
+    const img = new Image();
+    img.onload = () => loadingManager.itemEnd(src);
+    img.onerror = () => loadingManager.itemEnd(src);
+    img.src = src;
+  });
+
   // Create globe and markers
   const globeSetup = createGlobe(sceneSetup.scene, textureLoader, gltfLoader);
   sceneSetup.setOutlineTargets([globeSetup.globe, globeSetup.celestial.mars.mesh]);
