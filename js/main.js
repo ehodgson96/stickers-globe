@@ -6,6 +6,7 @@ import { createFeatures } from "./features.js";
 import { createUI } from "./ui.js";
 import { createAudio } from "./audio.js";
 import { createMinigame } from "./minigame.js";
+import { createMapView } from "./map.js";
 import { initParticles } from "./particles-bg.js";
 import { vectorToAngles, animateOrbit, shortestAngleDelta } from "./utils.js";
 import * as THREE from 'three';
@@ -144,6 +145,67 @@ async function init() {
     audio
   });
 
+  // ── Ground-level map view (Google Earth style dive) ─────────────────────
+  const mapView = createMapView(container, stickerData, {
+    onEnter: () => audio.playSelect(),
+    onMarkerSelect: (index) => {
+      audio.playSelect();
+      ui.sidebar.reveal(index);
+      ui.sidebar.setActive(index);
+      ui.sidebar.scrollTo(index);
+      // Keep the globe's marker highlight in sync for when the user re-emerges
+      markerSetup.highlightMarker(index);
+    },
+    onExit: () => {
+      // Pull the camera back out so the user re-emerges in orbit, not jammed
+      // against the surface (which would immediately re-trigger the dive).
+      sceneSetup.orbit.radius = 1.8;
+      sceneSetup.velocity.theta = sceneSetup.velocity.phi = 0;
+      sceneSetup.updateCamera();
+      markerSetup.updateScales(sceneSetup.orbit.radius);
+    }
+  });
+
+  // Accumulated zoom-in intent while already at minimum orbit radius.
+  // Once it passes the threshold, we dive into the map view.
+  let diveCharge = 0;
+  const DIVE_THRESHOLD = 150;
+
+  function chargeDive(amount) {
+    diveCharge += amount;
+    if (diveCharge >= DIVE_THRESHOLD) {
+      diveCharge = 0;
+      enterMapView();
+    }
+  }
+
+  function enterMapView() {
+    if (mapView.isActive() || minigame.isActive()) return;
+    deselectSticker();
+
+    // Lat/lng of the surface point currently under the camera, accounting
+    // for globe rotation (inverse of latLngToVector3 in globe-local space).
+    const local = globeSetup.globe
+      .worldToLocal(sceneSetup.camera.position.clone())
+      .normalize();
+    const lat = 90 - (Math.acos(THREE.MathUtils.clamp(local.y, -1, 1)) * 180) / Math.PI;
+    let lng = (Math.atan2(local.z, -local.x) * 180) / Math.PI - 180;
+    if (lng < -180) lng += 360;
+    if (lng > 180) lng -= 360;
+
+    // Final camera push toward the surface while the map crossfades in
+    const r0 = sceneSetup.orbit.radius;
+    const t0 = performance.now();
+    (function push() {
+      const t = Math.min((performance.now() - t0) / 700, 1);
+      sceneSetup.orbit.radius = r0 + (1.04 - r0) * t;
+      sceneSetup.updateCamera();
+      if (t < 1 && mapView.isActive()) requestAnimationFrame(push);
+    })();
+
+    mapView.show(lat, lng);
+  }
+
   let preGameRadius = CONFIG.orbit.radius;
 
   const _sidebarEl  = document.querySelector('.sidebar');
@@ -203,7 +265,11 @@ async function init() {
       setTimeout(() => particles?.destroy(), 1000);
     }, 1500);
   };
-  setupControls(container, sceneSetup, markerSetup, ui, minigame);
+  setupControls(container, sceneSetup, markerSetup, ui, minigame, {
+    isMapActive: () => mapView.isActive(),
+    chargeDive,
+    resetDive: () => { diveCharge = 0; }
+  });
 
   // ── Ripple system ────────────────────────────────────────────────────────
   const rippleRings = [];
@@ -260,7 +326,7 @@ async function init() {
   let _lastHoverIndex = null;
 
   container.addEventListener('mousemove', (e) => {
-    if (minigame.isActive()) return;
+    if (minigame.isActive() || mapView.isActive()) return;
     const rect = container.getBoundingClientRect();
     const idx = markerSetup.getHovered(e.clientX, e.clientY, rect);
     if (idx !== _lastHoverIndex) {
@@ -352,12 +418,25 @@ async function init() {
   }
 
   markerSetup.onSelect((index) => {
+    if (mapView.isActive()) return; // clicks in ground view belong to the map
     if (index === null) { deselectSticker(); return; }
     selectSticker(index);
     ui.sidebar.scrollTo(index);
   });
 
-  ui.sidebar.onClick((index) => selectSticker(index));
+  ui.sidebar.onClick((index) => {
+    const s = stickerData[index];
+    if (mapView.isActive() && !s?.isUfo && !s?.isMoon) {
+      // Stay in ground view: fly the map to the pin instead of moving the globe
+      audio.playSelect();
+      ui.sidebar.setActive(index);
+      markerSetup.highlightMarker(index);
+      mapView.focusSticker(index);
+      return;
+    }
+    if (mapView.isActive()) mapView.hide(); // UFO/Moon live in orbit — surface first
+    selectSticker(index);
+  });
 
   // Animation loop
   let fpsFrames = 0;
@@ -399,7 +478,10 @@ async function init() {
         const ufoWorld = new THREE.Vector3();
         ufo.getWorldPosition(ufoWorld);
         const { theta: tgtTheta, phi: tgtPhi } = vectorToAngles(ufoWorld);
-        const clampedPhi = THREE.MathUtils.clamp(tgtPhi, sceneSetup.orbit.minPhi, sceneSetup.orbit.maxPhi);
+        // Tilt the chase camera below the UFO so its beam and the ground
+        // contact point are visible (instead of looking straight down on it)
+        const GAME_CAM_TILT = 0.38;
+        const clampedPhi = THREE.MathUtils.clamp(tgtPhi + GAME_CAM_TILT, sceneSetup.orbit.minPhi, sceneSetup.orbit.maxPhi);
         const t = 1 - Math.pow(0.15, dt); // ~85% closed per second — cinematic lag
         sceneSetup.orbit.theta += shortestAngleDelta(sceneSetup.orbit.theta, tgtTheta) * t;
         sceneSetup.orbit.phi   += (clampedPhi - sceneSetup.orbit.phi) * t;
@@ -448,7 +530,7 @@ async function init() {
   animate();
 }
 
-function setupControls(container, sceneSetup, markerSetup, ui, minigame) {
+function setupControls(container, sceneSetup, markerSetup, ui, minigame, mapHooks) {
   let isDragging = false;
   let previousPos = { x: 0, y: 0 };
   let lastMoveTime = 0;
@@ -478,7 +560,8 @@ function setupControls(container, sceneSetup, markerSetup, ui, minigame) {
 
   // Mouse
   container.addEventListener("mousedown", (e) => {
-    if (minigame.isActive()) return;
+    if (minigame.isActive() || mapHooks.isMapActive()) return;
+    if (isFrom(e.target, '#map-view')) return;
     if (isFrom(e.target, '#sticker-popout')) return;
     if (isFrom(e.target, '.controls')) return;
     if (isFrom(e.target, '#settings-panel')) return;
@@ -525,7 +608,8 @@ function setupControls(container, sceneSetup, markerSetup, ui, minigame) {
   }
 
   container.addEventListener("touchstart", (e) => {
-    if (minigame.isActive()) return;
+    if (minigame.isActive() || mapHooks.isMapActive()) return;
+    if (isFrom(e.target, '#map-view')) return;
     if (isFrom(e.target, '#sticker-popout')) return;
     if (isFrom(e.target, '.controls')) return;
     if (isFrom(e.target, '#settings-panel')) return;
@@ -543,6 +627,8 @@ function setupControls(container, sceneSetup, markerSetup, ui, minigame) {
   });
 
   container.addEventListener("touchmove", (e) => {
+    if (mapHooks.isMapActive()) return;
+    if (isFrom(e.target, '#map-view')) return;
     if (isFrom(e.target, '#sticker-popout')) return;
     if (isFrom(e.target, '.controls')) return;
     if (isFrom(e.target, '#settings-panel')) return;
@@ -572,6 +658,12 @@ function setupControls(container, sceneSetup, markerSetup, ui, minigame) {
     } else if (e.touches.length === 2) {
       const newDist = getTouchDistance(e.touches);
       const delta = (touchStartDistance - newDist) * 0.005;
+      // Pinching in while already at closest orbit charges the map dive
+      if (delta < 0 && orbit.radius <= orbit.minRadius + 1e-6) {
+        mapHooks.chargeDive(-delta * 2000);
+      } else if (delta > 0) {
+        mapHooks.resetDive();
+      }
       orbit.radius = Math.max(
         orbit.minRadius,
         Math.min(orbit.maxRadius, orbit.radius + delta)
@@ -587,12 +679,19 @@ function setupControls(container, sceneSetup, markerSetup, ui, minigame) {
 
   // Wheel zoom
   container.addEventListener("wheel",(e) => {
-    if (minigame.isActive()) return;
+    if (minigame.isActive() || mapHooks.isMapActive()) return;
+    if (isFrom(e.target, '#map-view')) return;
     if (isFrom(e.target, '#sticker-popout')) return;
       if (isFrom(e.target, '.controls')) return;
       if (isFrom(e.target, '#settings-panel')) return;
       if (isFrom(e.target, '#settings-cog')) return;
       e.preventDefault();
+      // Scrolling in while already at closest orbit charges the map dive
+      if (e.deltaY < 0 && orbit.radius <= orbit.minRadius + 1e-6) {
+        mapHooks.chargeDive(-e.deltaY);
+      } else if (e.deltaY > 0) {
+        mapHooks.resetDive();
+      }
       orbit.radius = Math.max(
         orbit.minRadius,
         Math.min(orbit.maxRadius, orbit.radius + e.deltaY * 0.0015)

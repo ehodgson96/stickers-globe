@@ -53,6 +53,86 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
   beam.visible = false;
   globe.add(beam);
 
+  // ── Beam FX: lock-on reticle + tractor rings ─────────────────────────────
+  // Lock-on reticle: 3 spinning arc segments on the surface under the target
+  // cow. It shrinks and shifts yellow→green as the beam charges, so you can
+  // see exactly what the UFO is aiming at and how close the abduction is.
+  const lockRing = new THREE.Group();
+  const lockMat = new THREE.MeshBasicMaterial({
+    color: 0xffff44,
+    transparent: true,
+    opacity: 0.95,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+  for (let i = 0; i < 3; i++) {
+    const arc = new THREE.Mesh(
+      new THREE.RingGeometry(0.72, 0.85, 24, 1, (i * Math.PI * 2) / 3, Math.PI * 0.42),
+      lockMat
+    );
+    lockRing.add(arc);
+  }
+  lockRing.visible = false;
+  globe.add(lockRing);
+
+  // Tractor rings: hoops that travel up the beam cone during an abduction,
+  // tapering with the cone, so the "pull" is unmistakable.
+  const TRACTOR_RING_COUNT = 4;
+  const tractorRings = [];
+  for (let i = 0; i < TRACTOR_RING_COUNT; i++) {
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(1, 0.04, 8, 28),
+      new THREE.MeshBasicMaterial({
+        color: 0x88ff88,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+      })
+    );
+    ring.visible = false;
+    globe.add(ring);
+    tractorRings.push(ring);
+  }
+
+  function hideBeamFx() {
+    lockRing.visible = false;
+    tractorRings.forEach((r) => { r.visible = false; });
+  }
+
+  const _lockAlign = new THREE.Quaternion();
+  const _lockSpin = new THREE.Quaternion();
+  const _zAxis = new THREE.Vector3(0, 0, 1);
+
+  function updateLockRing(targetCow, chargeT) {
+    const n = targetCow.model.position.clone().normalize();
+    lockRing.visible = true;
+    lockRing.position.copy(n).multiplyScalar(1.004);
+    _lockAlign.setFromUnitVectors(_zAxis, n);
+    _lockSpin.setFromAxisAngle(_zAxis, performance.now() / 180);
+    lockRing.quaternion.copy(_lockAlign).multiply(_lockSpin);
+    // Reticle closes in as the charge builds
+    lockRing.scale.setScalar(0.17 - 0.11 * chargeT);
+    // Yellow (searching) → green (locked)
+    lockMat.color.setHSL(0.16 + chargeT * 0.17, 1, 0.55);
+  }
+
+  function updateTractorRings(ufo) {
+    const outward = ufo.position.clone().normalize();
+    const coneLen = Math.max(0.1, ufo.position.length() - 1.02);
+    tractorRings.forEach((ring, i) => {
+      ring.visible = true;
+      // Each ring cycles from the surface (frac 0) up to the UFO (frac 1)
+      const frac = (abductProgress * 1.5 + i / TRACTOR_RING_COUNT) % 1;
+      ring.position.lerpVectors(abductOrigPos, ufo.position, frac);
+      ring.quaternion.setFromUnitVectors(_zAxis, outward);
+      // Taper with the beam cone (base radius = coneLen * 0.22 at the surface)
+      ring.scale.setScalar(Math.max(0.02, coneLen * 0.22 * (1 - frac)));
+      ring.material.opacity = 0.85 * (1 - frac * 0.6);
+    });
+  }
+
   // ── DOM refs ─────────────────────────────────────────────────────────────
   const hud        = document.getElementById('mg-hud');
   const hudScore   = document.getElementById('mg-score');
@@ -185,6 +265,8 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
     cowObj.dPhi      = v.dPhi;
     cowObj.dirTimer  = 2 + Math.random() * 4;
     cowObj.model.visible = true;
+    // Restore full size — the abduction animation shrinks the model
+    if (_origCowScale) cowObj.model.scale.copy(_origCowScale).multiplyScalar(2);
     placeCowModel(cowObj);
   }
 
@@ -350,6 +432,7 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
   function endGame() {
     active = false;
     beam.visible = false;
+    hideBeamFx();
     audio?.stopBeam?.();
     restoreUfo();
     cleanupCows();
@@ -374,6 +457,7 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
     }
     active = false;
     beam.visible = false;
+    hideBeamFx();
     audio?.stopBeam?.();
     restoreUfo();
     cleanupCows();
@@ -431,7 +515,15 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
     // Abduction fly-up animation
     if (abductingCow) {
       abductProgress += dt / ABDUCT_TIME;
-      abductingCow.model.position.lerpVectors(abductOrigPos, abductTargetPos, Math.min(1, abductProgress));
+      const p = Math.min(1, abductProgress);
+      abductingCow.model.position.lerpVectors(abductOrigPos, abductTargetPos, p);
+      // Classic tractor-beam treatment: the cow spins and shrinks as it rises
+      abductingCow.model.rotateY(dt * 9);
+      if (_origCowScale) {
+        abductingCow.model.scale.copy(_origCowScale).multiplyScalar(2 * (1 - 0.7 * p));
+      }
+      lockRing.visible = false;
+      updateTractorRings(ufo);
       if (abductProgress >= 1) {
         score++;
         if (hudScore) hudScore.textContent = score;
@@ -439,6 +531,7 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
         respawnCow(abductingCow);
         abductingCow = null;
         beamCharge   = 0;
+        tractorRings.forEach((r) => { r.visible = false; });
       }
       beam.visible = true;
       beamMat.color.setHex(0x44ff44);
@@ -472,6 +565,7 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
       beam.visible = true;
       beamMat.color.setHex(0x44ff44);
       beamMat.opacity = 0.35 + 0.15 * Math.sin(beamCharge * 10);
+      updateLockRing(targetCow, Math.min(1, beamCharge / BEAM_CHARGE));
 
       if (beamCharge >= BEAM_CHARGE) {
         abductingCow   = targetCow;
@@ -484,9 +578,11 @@ export function createMinigame({ globe, getUfo, getCow, audio }) {
       beam.visible = true;
       beamMat.color.setHex(0xffff44);
       beamMat.opacity = 0.28;
+      lockRing.visible = false;
     } else {
       beamCharge   = 0;
       beam.visible = false;
+      lockRing.visible = false;
     }
 
     if (beam.visible && !prevBeamVisible) audio?.startBeam?.();
