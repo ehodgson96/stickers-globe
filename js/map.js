@@ -7,15 +7,19 @@ const LEAFLET_VERSION = '1.9.4';
 const LEAFLET_CSS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.css`;
 const LEAFLET_JS = `https://unpkg.com/leaflet@${LEAFLET_VERSION}/dist/leaflet.js`;
 
-const TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+// CARTO's dark_all basemap now requires an API key, so it 404s/placeholders
+// on every tile. Esri's "World Dark Gray" is free, keyless, and dark by
+// default — no CSS tinting needed to make it readable.
+const TILE_URL =
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
 const TILE_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+  '&copy; <a href="https://www.esri.com">Esri</a>, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 const ENTRY_START_ZOOM = 4;  // zoom level the fly-in starts from
 const ENTRY_ZOOM = 9;        // zoom level the fly-in settles at
 const EXIT_ZOOM = 3;         // zooming out to (or past) this returns to the globe
 const MIN_ZOOM = 3;
-const MAX_ZOOM = 18;
+const MAX_ZOOM = 16; // Esri World Dark Gray's native max — Leaflet upsamples beyond this
 
 let leafletPromise = null;
 
@@ -124,8 +128,10 @@ export function createMapView(container, stickerData, { onExit, onEnter, onMarke
 
     L.tileLayer(TILE_URL, {
       attribution: TILE_ATTRIBUTION,
-      subdomains: 'abcd',
-      maxZoom: MAX_ZOOM
+      maxZoom: MAX_ZOOM,
+      // Esri's dark-gray tiles stop at zoom 16 natively; keep serving those
+      // tiles upscaled past that instead of leaving blank squares
+      maxNativeZoom: 16
     }).addTo(map);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
