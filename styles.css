@@ -1323,10 +1323,10 @@ body {
   background: #0a120c;
 }
 
-/* Tiles only: lift the brightness and tint toward CRT phosphor green.
+/* Tiles only: nudge the already-dark Esri basemap toward CRT phosphor green.
    Applied to the tile pane (not the whole map) so pins/popups stay clean. */
 #map-canvas .leaflet-tile-pane {
-  filter: brightness(1.75) contrast(1.1) sepia(0.5) hue-rotate(55deg) saturate(1.9);
+  filter: contrast(1.08) sepia(0.35) hue-rotate(55deg) saturate(1.5);
 }
 
 /* Selected pin: phosphor glow + hover bounce */
